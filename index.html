@@ -1,0 +1,2843 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">كافيه همام - نظام المبيعات والمرتجعات</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: Tahoma, sans-serif; padding-bottom: 20px; }
+        .product-card { cursor: pointer; border-radius: 10px; border: 1px solid #dee2e6; background: #fff; transition: 0.1s; }
+        .product-card:active { background: #e9ecef; transform: scale(0.98); }
+        .category-btn { margin: 3px; border-radius: 20px; font-size: 0.8rem; }
+        .nav-pills .nav-link.active { background-color: #0d6efd; color: white; }
+
+        /* ===== نظام العرض: هاتف (عمودي) / كمبيوتر ===== */
+        body { overflow-x: hidden; }
+        .view-desktop #appScreen { max-width: 1400px; margin-left: auto; margin-right: auto; }
+
+        .view-phone #appScreen { max-width: 480px; margin-left: auto; margin-right: auto; padding-left: 6px; padding-right: 6px; }
+        .view-phone #loginScreen { max-width: 100% !important; padding-top: 1.5rem !important; }
+        .view-phone #mainTabs { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+        .view-phone #mainTabs .nav-link { white-space: nowrap; font-size: 0.8rem; padding: 0.4rem 0.7rem; flex: 0 0 auto; }
+        .view-phone .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .view-phone table { font-size: 0.72rem; }
+        .view-phone .card.p-4 { padding: 0.9rem !important; }
+        .view-phone .card.p-3 { padding: 0.75rem !important; }
+        .view-phone .d-flex.justify-content-between { flex-wrap: wrap; gap: 0.4rem; }
+        .view-phone #checkoutBtn { width: 100%; }
+        .view-phone #confirmReturnBtn, .view-phone #cancelReturnBtn { flex: 1; padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+        .view-phone .modal-dialog { margin: 0.5rem; max-width: none; }
+        .view-phone h3 { font-size: 1.2rem; }
+        .view-phone h4 { font-size: 1.1rem; }
+        /* محاكاة نقاط التوقف في وضع الهاتف حتى على شاشة كبيرة */
+        .view-phone .row > [class*="col-md"],
+        .view-phone .row > [class*="col-lg"],
+        .view-phone .row > [class*="col-xl"] { flex: 0 0 auto; width: 100%; }
+        .view-phone .row > .col-6 { flex: 0 0 auto; width: 50%; }
+        .view-phone .row > .col-4 { flex: 0 0 auto; width: 33.3333%; }
+        .view-phone .row > .col-12 { flex: 0 0 auto; width: 100%; }
+
+        .view-mode-select { width: auto; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<!-- شاشة تسجيل الدخول -->
+<div id="loginScreen" class="container py-5" style="max-width: 420px;">
+    <div class="card shadow-sm p-4 border-0">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-primary" id="loginBrandName"><i class="fas fa-coffee"></i> كافيه همام</h3>
+            <p class="text-muted small">تسجيل الدخول للنظام الشامل</p>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">اسم المستخدم:</label>
+            <input type="text" id="usernameInput" class="form-control" placeholder="أدخل اسم المستخدم" autocomplete="off">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">كلمة المرور:</label>
+            <input type="password" id="passwordInput" class="form-control" placeholder="أدخل كلمة المرور">
+        </div>
+        <button id="loginBtn" class="btn btn-primary w-100">دخول</button>
+        <div id="loginError" class="text-danger text-center mt-2 small"></div>
+        <div class="text-center mt-3">
+            <label class="small text-muted me-1"><i class="fas fa-mobile-alt"></i> نظام العرض:</label>
+            <select class="form-select form-select-sm view-mode-select">
+                <option value="auto">تلقائي</option>
+                <option value="phone">هاتف (عمودي)</option>
+                <option value="desktop">كمبيوتر</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- التطبيق الرئيسي -->
+<div id="appScreen" class="container-fluid py-2" style="display: none;">
+    <!-- شريط العنوان والتبويبات -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 bg-white p-2 rounded shadow-sm gap-2">
+        <div>
+            <h5 class="fw-bold text-primary mb-0" id="appBrandHeader"><i class="fas fa-coffee"></i> كافيه همام</h5>
+            <span class="badge bg-secondary" id="userRoleBadge"></span>
+        </div>
+        <div class="nav nav-pills" id="mainTabs" role="tablist">
+            <button class="nav-link active btn-sm mx-1" id="pos-tab" data-bs-toggle="pill" data-bs-target="#posPane" type="button"><i class="fas fa-cash-register"></i> شاشة البيع</button>
+            <button class="nav-link btn-sm mx-1" id="invoices-tab" data-bs-toggle="pill" data-bs-target="#invoicesPane" type="button"><i class="fas fa-file-invoice-dollar"></i> فواتير المبيعات</button>
+            <button class="nav-link btn-sm mx-1" id="returns-tab" data-bs-toggle="pill" data-bs-target="#returnsPane" type="button"><i class="fas fa-undo-alt text-danger"></i> المرتجعات</button>
+            <button class="nav-link btn-sm mx-1" id="waste-tab" data-bs-toggle="pill" data-bs-target="#wastePane" type="button"><i class="fas fa-trash-alt text-secondary"></i> الهادر</button>
+            <button class="nav-link btn-sm mx-1" id="daily-tab" data-bs-toggle="pill" data-bs-target="#dailyPane" type="button"><i class="fas fa-chart-line"></i> تقرير اليوم</button>
+            <button class="nav-link btn-sm mx-1" id="topItems-tab" data-bs-toggle="pill" data-bs-target="#topItemsPane" type="button"><i class="fas fa-trophy"></i> الأكثر مبيعاً</button>
+            <button class="nav-link btn-sm mx-1" id="settings-tab" data-bs-toggle="pill" data-bs-target="#settingsPane" type="button" style="display:none;"><i class="fas fa-cogs"></i> الإعدادات</button>
+            <button class="nav-link btn-sm mx-1" id="permissions-tab" data-bs-toggle="pill" data-bs-target="#permissionsPane" type="button" style="display:none;"><i class="fas fa-user-shield"></i> الصلاحيات</button>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm view-mode-select" title="نظام العرض">
+                <option value="auto">عرض: تلقائي</option>
+                <option value="phone">عرض: هاتف</option>
+                <option value="desktop">عرض: كمبيوتر</option>
+            </select>
+            <button class="btn btn-outline-danger btn-sm" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        </div>
+    </div>
+
+    <!-- محتوى التبويبات -->
+    <div class="tab-content">
+        
+        <!-- 1. شاشة البيع (POS) -->
+        <div class="tab-pane fade show active" id="posPane">
+            <div class="card mb-3 p-2 bg-white shadow-sm border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small fw-bold text-secondary"><i class="fas fa-calendar-day"></i> تاريخ البيع (تاريخ اليوم فقط):</span>
+                    <input type="date" id="saleDateInput" class="form-control form-control-sm w-auto" readonly>
+                </div>
+            </div>
+
+            <!-- أزرار الأقسام -->
+            <div class="d-flex overflow-auto pb-2 mb-2" id="categoriesContainer" style="white-space: nowrap;">
+                <button class="btn btn-dark category-btn active" data-category="ALL">الكل</button>
+            </div>
+
+            <!-- خانة البحث -->
+            <div class="mb-3">
+                <input type="text" id="searchBox" class="form-control form-control-sm" placeholder="ابحث عن صنف...">
+            </div>
+
+            <!-- عدد المنتجات والمجموعات -->
+            <div class="d-flex flex-wrap gap-2 mb-2 small">
+                <span class="badge bg-primary fs-6 fw-normal"><i class="fas fa-box"></i> عدد المنتجات: <strong id="itemsCountTotal">0</strong></span>
+                <span class="badge bg-secondary fs-6 fw-normal"><i class="fas fa-layer-group"></i> عدد المجموعات: <strong id="categoriesCountTotal">0</strong></span>
+                <span class="badge bg-info text-dark fs-6 fw-normal"><i class="fas fa-eye"></i> المعروض الآن: <strong id="itemsCountShown">0</strong></span>
+            </div>
+
+            <!-- قائمة الأصناف -->
+            <div class="row g-2 mb-3" id="itemsContainer"></div>
+
+            <!-- السلة والخصم -->
+            <div class="card shadow-sm p-3 border-0 bg-white">
+                <h6 class="fw-bold border-bottom pb-2 mb-2"><i class="fas fa-receipt"></i> السلة وفاتورة البيع الحالية</h6>
+                <div class="table-responsive" style="max-height: 160px; overflow-y: auto;">
+                    <table class="table table-sm text-center align-middle mb-2">
+                        <thead>
+                            <tr class="table-light">
+                                <th>الصنف</th>
+                                <th>السعر</th>
+                                <th>الكمية</th>
+                                <th>الإجمالي</th>
+                                <th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartTableBody">
+                            <tr><td colspan="5" class="text-muted small">السلة فارغة</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="border-top pt-2 mt-1">
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-6">
+                            <span class="small text-muted">المجموع الفرعي: <strong id="subTotal">0.00</strong> ج.م</span>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">الخصم (%):</span>
+                                <input type="number" id="discountInput" class="form-control" value="0" min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">الإجمالي النهائي: <span id="grandTotal" class="text-success fw-bold">0.00</span> ج.م</h5>
+                        <button class="btn btn-success btn-sm px-4 py-2" id="checkoutBtn"><i class="fas fa-check-circle"></i> إتمام وحفظ البيع</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. شاشة فواتير المبيعات -->
+        <div class="tab-pane fade" id="invoicesPane">
+            <div class="card shadow-sm p-3 border-0 bg-white">
+                <h5 class="fw-bold mb-3 text-primary"><i class="fas fa-file-invoice-dollar"></i> إدارة وفلترة فواتير المبيعات</h5>
+                
+                <div class="row g-2 mb-3 bg-light p-2 rounded align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small">طريقة العرض:</label>
+                        <select id="viewMode" class="form-select form-select-sm">
+                            <option value="summary">عرض بالإجمالي (لكل فاتورة سطر)</option>
+                            <option value="items">عرض بالأصناف (كل صنف في سطر ورقم الفاتورة)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">من تاريخ:</label>
+                        <input type="date" id="filterDateFrom" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">إلى تاريخ:</label>
+                        <input type="date" id="filterDateTo" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">بحث (رقم الفاتورة أو الصنف):</label>
+                        <input type="text" id="filterSearchText" class="form-control form-control-sm" placeholder="بحث...">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary btn-sm w-100" id="searchInvoicesBtn"><i class="fas fa-search"></i> تنفيذ البحث</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 50vh; overflow-y: auto;">
+                    <table class="table table-striped table-sm text-center align-middle" id="invoicesTable"></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. شاشة المرتجعات (Returns) -->
+        <div class="tab-pane fade" id="returnsPane">
+            <div class="card shadow-sm p-4 border-0 bg-white" style="max-width: 950px; margin: auto;">
+                <h4 class="fw-bold text-danger mb-3"><i class="fas fa-undo-alt"></i> شاشة المرتجعات (بحث برقم الفاتورة أو الصنف)</h4>
+                
+                <div class="row g-2 mb-3 bg-light p-3 rounded align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small">من تاريخ:</label>
+                        <input type="date" id="returnDateFrom" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">إلى تاريخ:</label>
+                        <input type="date" id="returnDateTo" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">بحث (رقم الفاتورة أو الصنف):</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="returnSearchText" class="form-control" placeholder="رقم الفاتورة أو اسم الصنف...">
+                            <button class="btn btn-danger" id="searchReturnBtn"><i class="fas fa-search"></i> بحث</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold text-secondary"><i class="fas fa-list"></i> الفواتير المطابقة للبحث (اضغط على "اختر للإرجاع" لفتح نافذة المرتجع):</h6>
+                    <div class="table-responsive" style="max-height: 35vh; overflow-y: auto;">
+                        <table class="table table-striped table-sm text-center align-middle" id="matchingInvoicesTable">
+                            <thead>
+                                <tr class="table-dark">
+                                    <th>رقم الفاتورة</th>
+                                    <th>التاريخ والوقت</th>
+                                    <th>الأصناف والكميات</th>
+                                    <th>إجمالي الفاتورة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="5" class="text-muted">أدخل بيانات البحث أو اضغط بحث لعرض الفواتير</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="returnDetailsContainer" style="display: none;" class="card border-danger mb-3">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <span>إثبات مرتجع للفاتورة رقم: <strong id="retInvIdDisplay"></strong></span>
+                        <span id="retInvDateDisplay" class="small"></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-secondary py-2 mb-3 small d-flex justify-content-between align-items-center">
+                            <span>المجموع الفرعي للفاتورة: <strong id="retSubTotalDisplay">0.00</strong> ج.م</span>
+                            <span>نسبة خصم الفاتورة: <strong id="retDiscountDisplay" class="text-danger">0%</strong></span>
+                            <span>الإجمالي بعد الخصم: <strong id="retGrandTotalDisplay" class="text-success">0.00</strong> ج.م</span>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered text-center align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>اسم الصنف</th>
+                                        <th>السعر الأصلي</th>
+                                        <th>السعر بعد الخصم</th>
+                                        <th>الكمية المباعة</th>
+                                        <th>الكمية المرتجعة</th>
+                                        <th>قيمة المرتجع (بالصافي)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="returnItemsTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                            <div>
+                                <span class="text-muted">إجمالي مبلغ المرتجع المستحق: <strong id="returnTotalAmount" class="text-danger">0.00</strong> ج.م</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-secondary px-4" id="cancelReturnBtn"><i class="fas fa-times-circle"></i> إلغاء الإرجاع</button>
+                                <button class="btn btn-danger px-4" id="confirmReturnBtn"><i class="fas fa-check-circle"></i> تأكيد وإثبات المرتجع</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold mt-4 mb-2 text-secondary"><i class="fas fa-history"></i> سجل فواتير المرتجعات المسجلة</h5>
+                <div class="table-responsive" style="max-height: 30vh; overflow-y: auto;">
+                    <table class="table table-striped table-sm text-center align-middle" id="returnsHistoryTable"></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة الهادر (بنفس آلية المرتجعات) -->
+        <div class="tab-pane fade" id="wastePane">
+            <div class="card shadow-sm p-4 border-0 bg-white" style="max-width: 950px; margin: auto;">
+                <h4 class="fw-bold text-secondary mb-3"><i class="fas fa-trash-alt"></i> شاشة الهادر (بحث برقم الفاتورة أو الصنف)</h4>
+
+                <div class="row g-2 mb-3 bg-light p-3 rounded align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small">من تاريخ:</label>
+                        <input type="date" id="wasteDateFrom" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">إلى تاريخ:</label>
+                        <input type="date" id="wasteDateTo" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">بحث (رقم الفاتورة أو الصنف):</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="wasteSearchText" class="form-control" placeholder="رقم الفاتورة أو اسم الصنف...">
+                            <button class="btn btn-secondary" id="searchWasteBtn"><i class="fas fa-search"></i> بحث</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold text-secondary"><i class="fas fa-list"></i> الفواتير المطابقة للبحث (اضغط على "اختر للهادر" لفتح نافذة الهادر):</h6>
+                    <div class="table-responsive" style="max-height: 35vh; overflow-y: auto;">
+                        <table class="table table-striped table-sm text-center align-middle" id="matchingWasteTable">
+                            <thead>
+                                <tr class="table-dark">
+                                    <th>رقم الفاتورة</th>
+                                    <th>التاريخ والوقت</th>
+                                    <th>الأصناف والكميات</th>
+                                    <th>إجمالي الفاتورة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="5" class="text-muted">أدخل بيانات البحث أو اضغط بحث لعرض الفواتير</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="wasteDetailsContainer" style="display: none;" class="card border-secondary mb-3">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <span>تسجيل هادر للفاتورة رقم: <strong id="wasteInvIdDisplay"></strong></span>
+                        <span id="wasteInvDateDisplay" class="small"></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-secondary py-2 mb-3 small d-flex justify-content-between align-items-center">
+                            <span>المجموع الفرعي للفاتورة: <strong id="wasteSubTotalDisplay">0.00</strong> ج.م</span>
+                            <span>نسبة خصم الفاتورة: <strong id="wasteDiscountDisplay" class="text-danger">0%</strong></span>
+                            <span>الإجمالي بعد الخصم: <strong id="wasteGrandTotalDisplay" class="text-success">0.00</strong> ج.م</span>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered text-center align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>اسم الصنف</th>
+                                        <th>السعر الأصلي</th>
+                                        <th>السعر بعد الخصم</th>
+                                        <th>الكمية المباعة</th>
+                                        <th>الكمية الهادرة</th>
+                                        <th>قيمة الهادر (بالصافي)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wasteItemsTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label small">سبب الهادر (اختياري):</label>
+                            <input type="text" id="wasteReason" class="form-control form-control-sm" placeholder="مثال: وقع على الأرض / منتهي الصلاحية...">
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                            <div>
+                                <span class="text-muted">إجمالي قيمة الهادر: <strong id="wasteTotalAmount" class="text-danger">0.00</strong> ج.م</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-secondary px-4" id="cancelWasteBtn"><i class="fas fa-times-circle"></i> إلغاء</button>
+                                <button class="btn btn-secondary px-4" id="confirmWasteBtn"><i class="fas fa-check-circle"></i> تأكيد وإثبات الهادر</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold mt-4 mb-2 text-secondary"><i class="fas fa-history"></i> سجل الهادر المسجل</h5>
+                <div class="table-responsive" style="max-height: 30vh; overflow-y: auto;">
+                    <table class="table table-striped table-sm text-center align-middle" id="wasteHistoryTable"></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. شاشة تقرير أعمال اليوم -->
+        <div class="tab-pane fade" id="dailyPane">
+            <div class="card shadow-sm p-4 border-0 bg-white" style="max-width: 700px; margin: auto;">
+                <h4 class="fw-bold text-primary mb-3"><i class="fas fa-chart-line"></i> تقرير أعمال اليوم</h4>
+                <div class="row g-2 mb-3 bg-light p-3 rounded align-items-end">
+                    <div class="col-md-4 col-6">
+                        <label for="dailyDateFrom" class="form-label small">من تاريخ:</label>
+                        <input type="date" id="dailyDateFrom" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4 col-6">
+                        <label for="dailyDateTo" class="form-label small">إلى تاريخ:</label>
+                        <input type="date" id="dailyDateTo" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4 col-12">
+                        <button class="btn btn-primary btn-sm w-100" id="searchDailyBtn"><i class="fas fa-search"></i> عرض التقرير</button>
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">الفترة المحددة: <strong id="reportDateDisplay"></strong></span>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-success" id="exportDailyExcelBtn"><i class="fas fa-file-excel"></i> تصدير Excel</button>
+                            <button class="btn btn-sm btn-outline-danger" id="exportDailyPdfBtn"><i class="fas fa-file-pdf"></i> تصدير PDF</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="refreshDailyBtn"><i class="fas fa-sync"></i> تحديث</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2 mb-4 text-center">
+                    <div class="col-6 col-md">
+                        <div class="card bg-primary text-white p-3 h-100">
+                            <h6 class="mb-1" style="font-size: 0.8rem;">عدد الفواتير</h6>
+                            <h3 id="repInvoiceCount" class="fw-bold mb-0">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="card bg-success text-white p-3 h-100">
+                            <h6 class="mb-1" style="font-size: 0.8rem;">إجمالي المبيعات قبل الخصم</h6>
+                            <h3 id="repTotalSales" class="fw-bold mb-0" style="font-size: 1.1rem;">0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="card bg-warning text-dark p-3 h-100">
+                            <h6 class="mb-1" style="font-size: 0.8rem;">إجمالي الخصومات</h6>
+                            <h3 id="repTotalDiscount" class="fw-bold mb-0" style="font-size: 1.1rem;">0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="card bg-danger text-white p-3 h-100">
+                            <h6 class="mb-1" style="font-size: 0.8rem;">إجمالي المرتجعات</h6>
+                            <h3 id="repTotalReturns" class="fw-bold mb-0" style="font-size: 1.1rem;">0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="card bg-info text-white p-3 h-100">
+                            <h6 class="mb-1" style="font-size: 0.8rem;">صافي المبيعات</h6>
+                            <h3 id="repNetSales" class="fw-bold mb-0" style="font-size: 1.1rem;">0.00</h3>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="card bg-secondary text-white p-3 h-100">
+                            <h6 class="mb-1" style="font-size: 0.8rem;">إجمالي الهادر</h6>
+                            <h3 id="repTotalWaste" class="fw-bold mb-0" style="font-size: 1.1rem;">0.00</h3>
+                        </div>
+                    </div>
+                </div>
+                <h6 class="fw-bold border-bottom pb-2">تفاصيل مبيعات أصناف اليوم (صافي بعد المرتجعات والهادر):</h6>
+                <div class="table-responsive" style="max-height: 30vh; overflow-y: auto;">
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>تاريخ البيع</th>
+                                <th>اسم الصنف</th>
+                                <th>الكمية المباعة (صافي)</th>
+                                <th>إجمالي المبيعات (صافي)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyItemsTableBody">
+                            <tr><td colspan="4" class="text-muted">لا توجد مبيعات اليوم</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h6 class="fw-bold border-bottom pb-2 mt-4 text-danger"><i class="fas fa-undo-alt"></i> الأصناف المرتجعة خلال الفترة:</h6>
+                <div class="table-responsive" style="max-height: 25vh; overflow-y: auto;">
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>اسم الصنف</th>
+                                <th>الكمية المرتجعة</th>
+                                <th>قيمة المرتجع</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyReturnsTableBody">
+                            <tr><td colspan="3" class="text-muted">لا توجد مرتجعات خلال الفترة</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h6 class="fw-bold border-bottom pb-2 mt-4 text-secondary"><i class="fas fa-trash-alt"></i> الأصناف الهادرة خلال الفترة:</h6>
+                <div class="table-responsive" style="max-height: 25vh; overflow-y: auto;">
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>اسم الصنف</th>
+                                <th>الكمية الهادرة</th>
+                                <th>قيمة الهادر</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyWasteTableBody">
+                            <tr><td colspan="3" class="text-muted">لا يوجد هادر خلال الفترة</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. تقرير الأصناف الأكثر مبيعاً -->
+        <div class="tab-pane fade" id="topItemsPane">
+            <div class="container-fluid px-0">
+                <div class="card border-0 shadow-sm mb-3 overflow-hidden">
+                    <div class="p-3 p-md-4 text-white" style="background: linear-gradient(120deg,#142b4a,#1769aa);">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <div class="small opacity-75 mb-1">تحليل أداء المنتجات</div>
+                                <h3 class="fw-bold mb-1"><i class="fas fa-trophy me-1"></i> تقرير الأصناف الأكثر مبيعاً</h3>
+                                <div class="small opacity-75">اعرف الأصناف الأعلى طلباً خلال أي فترة وحدد المنتجات التي تحقق أعلى مبيعات</div>
+                            </div>
+                            <span class="badge rounded-pill bg-light text-primary px-3 py-2"><i class="fas fa-chart-bar"></i> تقرير تحليلي</span>
+                        </div>
+                    </div>
+                    <div class="card-body bg-white">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-lg-2">
+                                <label for="topItemsDateFrom" class="form-label small fw-bold">من تاريخ</label>
+                                <input type="date" id="topItemsDateFrom" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <label for="topItemsDateTo" class="form-label small fw-bold">إلى تاريخ</label>
+                                <input type="date" id="topItemsDateTo" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <label for="topItemsLimit" class="form-label small fw-bold">عدد الأصناف</label>
+                                <select id="topItemsLimit" class="form-select form-select-sm">
+                                    <option value="10">أفضل 10</option><option value="20">أفضل 20</option><option value="50">أفضل 50</option><option value="all">كل الأصناف</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-lg-3">
+                                <label for="topItemsSort" class="form-label small fw-bold">ترتيب التقرير حسب</label>
+                                <select id="topItemsSort" class="form-select form-select-sm">
+                                    <option value="qty">صافي الكمية المباعة</option><option value="revenue">صافي قيمة المبيعات</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-lg-3 d-flex gap-2">
+                                <button class="btn btn-primary btn-sm flex-fill" id="searchTopItemsBtn"><i class="fas fa-search"></i> عرض التقرير</button>
+                                <button class="btn btn-outline-secondary btn-sm" id="refreshTopItemsBtn" title="تحديث"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center mt-2 gap-2">
+                                <span class="small text-muted">الفترة: <strong id="topItemsPeriodLabel">—</strong></span>
+                                <div class="input-group input-group-sm" style="max-width:280px;">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                                    <input type="search" id="topItemsSearch" class="form-control" placeholder="ابحث باسم الصنف أو الكود...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3 text-center">
+                    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-muted mb-1">إجمالي صافي الكميات</div><div class="fs-3 fw-bold text-primary" id="topItemsTotalQty">0</div><div class="small text-muted">وحدة مباعة</div></div></div></div>
+                    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-muted mb-1">صافي قيمة المبيعات</div><div class="fs-4 fw-bold text-success" id="topItemsTotalRevenue">0.00 ج.م</div><div class="small text-muted">بعد الخصومات والمرتجعات والهادر</div></div></div></div>
+                    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-muted mb-1">عدد الأصناف المباعة</div><div class="fs-3 fw-bold text-info" id="topItemsCount">0</div><div class="small text-muted">صنف خلال الفترة</div></div></div></div>
+                    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="small text-muted mb-1">الصنف الأعلى مبيعاً</div><div class="fs-5 fw-bold text-warning" id="topItemsBestName">—</div><div class="small text-muted" id="topItemsBestQty">0 وحدة</div></div></div></div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-xl-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white fw-bold py-3"><i class="fas fa-chart-bar text-primary"></i> أفضل 5 أصناف حسب الترتيب</div>
+                            <div class="card-body" id="topItemsChart"><div class="text-muted small text-center py-4">اختر الفترة لعرض التحليل</div></div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-xl-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                                <strong><i class="fas fa-list-ol text-primary"></i> ترتيب الأصناف</strong>
+                                <button class="btn btn-outline-success btn-sm" id="exportTopItemsBtn"><i class="fas fa-file-excel"></i> تصدير Excel / CSV</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped table-sm text-center align-middle mb-0" id="topItemsTable">
+                                    <thead class="table-dark"><tr><th>الترتيب</th><th class="text-start">الصنف</th><th>الكود</th><th>كمية البيع</th><th>المرتجع</th><th>الهادر</th><th>صافي الكمية</th><th>صافي المبيعات</th><th>نسبة المساهمة</th></tr></thead>
+                                    <tbody id="topItemsTableBody"><tr><td colspan="9" class="text-muted py-4">حدد الفترة واضغط عرض التقرير</td></tr></tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-white small text-muted" id="topItemsResultCount">لا توجد نتائج بعد</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. شاشة الإعدادات الجديدة -->
+        <div class="tab-pane fade" id="settingsPane">
+            <div class="card shadow-sm p-4 border-0 bg-white" style="max-width: 650px; margin: auto;">
+                <h4 class="fw-bold text-primary mb-3"><i class="fas fa-cogs"></i> إعدادات النظام</h4>
+                
+                <!-- إعداد اسم النشاط -->
+                <div class="mb-3 p-3 bg-light rounded">
+                    <label class="form-label fw-bold">اسم النشاط / المكان:</label>
+                    <div class="input-group">
+                        <input type="text" id="settingBusinessName" class="form-control" placeholder="أدخل اسم النشاط...">
+                        <button class="btn btn-primary" id="saveBusinessNameBtn"><i class="fas fa-save"></i> حفظ الاسم</button>
+                    </div>
+                    <div class="form-text">يظهر اسم النشاط في ترويسة النظام وعناوين الشاشات.</div>
+                </div>
+
+                <!-- إعداد الرسالة الترحيبية في الفاتورة -->
+                <div class="mb-3 p-3 bg-light rounded">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="greetingToggle" style="transform: scale(1.3); margin-left: 10px;">
+                        <label class="form-check-label fw-bold" for="greetingToggle">تفعيل الرسالة الترحيبية في أسفل الفاتورة</label>
+                    </div>
+                    <label class="form-label small text-muted">نص الرسالة الترحيبية:</label>
+                    <div class="input-group">
+                        <input type="text" id="settingGreetingText" class="form-control form-control-sm" placeholder="مثال: شكراً لزيارتكم، نتمنى لكم وقتاً ممتعاً!">
+                        <button class="btn btn-outline-primary btn-sm" id="saveGreetingBtn"><i class="fas fa-save"></i> حفظ الرسالة</button>
+                    </div>
+                </div>
+
+                <!-- إعداد استيراد وتصدير الأصناف -->
+                <div class="mb-3 p-3 bg-light rounded">
+                    <label class="form-label fw-bold">إدارة أصناف القائمة (استيراد وتصدير):</label>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-7">
+                            <div class="input-group input-group-sm">
+                                <input type="file" class="form-control" id="importFileSetting" accept=".xlsx, .xls, .csv">
+                                <label class="input-group-text btn btn-outline-primary" for="importFileSetting"><i class="fas fa-file-excel"></i> استيراد أصناف</label>
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <button class="btn btn-outline-success btn-sm w-100" id="exportBtnSetting"><i class="fas fa-file-export"></i> تصدير الأصناف الحالية</button>
+                        </div>
+                    </div>
+                    <div id="importMsgSetting" class="form-text text-success text-center mt-2" style="font-size: 0.8rem;"></div>
+                </div>
+
+                <!-- النسخ الاحتياطي: تصدير واستيراد قاعدة البيانات JSON (للمدير فقط) -->
+                <div class="mb-3 p-3 bg-light rounded" id="dbBackupSection">
+                    <label class="form-label fw-bold"><i class="fas fa-database"></i> قاعدة البيانات (نسخة احتياطية JSON):</label>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <button class="btn btn-outline-success btn-sm w-100" id="exportDbJsonBtn"><i class="fas fa-file-export"></i> تصدير قاعدة البيانات (JSON)</button>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="input-group input-group-sm">
+                                <input type="file" class="form-control" id="importDbJsonFile" accept=".json,application/json">
+                                <label class="input-group-text" for="importDbJsonFile"><i class="fas fa-file-import"></i> استيراد</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-text">يشمل الأصناف والفواتير والمرتجعات والهادر والمستخدمين والإعدادات. الاستيراد <strong>يستبدل</strong> كل البيانات الحالية، فصدّر نسخة قبله. متاح للمدير فقط.</div>
+                    <div id="dbJsonMsg" class="form-text text-center fw-bold mt-1"></div>
+                </div>
+
+                <!-- إعداد تفعيل إرسال الفاتورة عبر واتساب -->
+                <div class="mb-3 p-3 bg-light rounded">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="whatsappFeatureToggle" style="transform: scale(1.3); margin-left: 10px;">
+                        <label class="form-check-label fw-bold" for="whatsappFeatureToggle">تفعيل إرسال فاتورة المبيعات عبر رقم الواتساب للعميل</label>
+                    </div>
+                    <div class="form-text mt-2">عند التفعيل، سيطلب النظام إدخال رقم هاتف العميل عند إتمام البيع مع خيار للتخطي، وتوليد صورة أو نص الفاتورة عبر تطبيق WhatsApp.</div>
+                </div>
+
+                <div id="settingsSaveMsg" class="text-success text-center fw-bold"></div>
+            </div>
+        </div>
+
+        <!-- 6. شاشة الصلاحيات -->
+        <div class="tab-pane fade" id="permissionsPane">
+            <div class="card shadow-sm p-4 border-0 bg-white" style="max-width: 1100px; margin: auto;">
+                <h4 class="fw-bold text-dark mb-3"><i class="fas fa-user-shield"></i> إدارة المستخدمين والصلاحيات</h4>
+
+                <!-- إضافة مستخدم جديد -->
+                <div class="row g-2 mb-3 bg-light p-3 rounded align-items-end">
+                    <div class="col-12"><strong class="small"><i class="fas fa-user-plus"></i> إضافة مستخدم جديد</strong></div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label small">الاسم:</label>
+                        <input type="text" id="newUserName" class="form-control form-control-sm" placeholder="مثال: أحمد">
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label small">اسم المستخدم (للدخول):</label>
+                        <input type="text" id="newUserUsername" class="form-control form-control-sm" placeholder="مثال: ahmed">
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small">كلمة المرور:</label>
+                        <input type="text" id="newUserPassword" class="form-control form-control-sm" placeholder="كلمة المرور">
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small">الدور:</label>
+                        <select id="newUserRole" class="form-select form-select-sm">
+                            <option value="cashier">كاشير</option>
+                            <option value="admin">مدير</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-12">
+                        <button class="btn btn-primary btn-sm w-100" id="addUserBtn"><i class="fas fa-plus"></i> إضافة</button>
+                    </div>
+                </div>
+
+                <!-- جدول المستخدمين والصلاحيات -->
+                <div class="small text-muted mb-2">حدد الصلاحيات من الجدول (تُحفظ فوراً). المدير يملك كل الصلاحيات دائماً.</div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm text-center align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الاسم</th>
+                                <th>اسم المستخدم</th>
+                                <th>الدور</th>
+                                <th>شاشة البيع</th>
+                                <th>فواتير المبيعات</th>
+                                <th>المرتجعات</th>
+                                <th>الهادر</th>
+                                <th>تقرير اليوم</th>
+                                <th>الأكثر مبيعاً</th>
+                                <th>الإعدادات</th>
+                                <th>تعديل/إلغاء الفواتير</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="permMsg" class="text-success small text-center"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal إدخال رقم العميل للواتساب عند البيع -->
+<div class="modal fade" id="whatsappModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fab fa-whatsapp"></i> إرسال الفاتورة عبر واتساب</h5>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="pendingInvoiceId">
+                <p class="small text-muted">تم حفظ الفاتورة بنجاح. أخلِ الحقل أو أدخل رقم هاتف العميل (مع كود الدولة مثل 20+) لإرسال صورة/نص الفاتورة، أو اضغط تخطي.</p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">رقم هاتف العميل (واتساب):</label>
+                    <input type="text" id="customerPhoneInput" class="form-control" placeholder="مثال: 201012345678">
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm" id="skipWhatsappBtn">تخطي</button>
+                <button type="button" class="btn btn-success btn-sm px-4" id="sendWhatsappBtn"><i class="fab fa-whatsapp"></i> إرسال عبر واتساب</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مخفي: حاوية توليد صورة الفاتورة للواتساب -->
+<div id="invoiceCanvasContainer" style="position: absolute; left: -9999px; top: -9999px;">
+    <div id="receiptCard" style="width: 380px; background: #fff; padding: 20px; font-family: Tahoma, sans-serif; border: 1px solid #ddd; color: #333; direction: rtl; text-align: right;">
+        <div class="text-center mb-3">
+            <h4 id="rcptBizName" style="font-weight: bold; color: #0d6efd; margin-bottom: 5px;">كافيه همام</h4>
+            <div style="font-size: 0.85rem; color: #666;" id="rcptInvId">فاتورة رقم: INV-1000</div>
+            <div style="font-size: 0.75rem; color: #886;" id="rcptDatetime">التاريخ: 2026-06-01</div>
+        </div>
+        <hr style="border-top: 1px dashed #ccc;">
+        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-bottom: 10px;">
+            <thead>
+                <tr style="border-bottom: 1px solid #ddd; background: #f8f9fa;">
+                    <th style="padding: 5px; text-align: right;">الصنف</th>
+                    <th style="padding: 5px; text-align: center;">كمية</th>
+                    <th style="padding: 5px; text-align: left;">الإجمالي</th>
+                </tr>
+            </thead>
+            <tbody id="rcptItemsList">
+            </tbody>
+        </table>
+        <hr style="border-top: 1px dashed #ccc;">
+        <div style="font-size: 0.85rem; margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span>المجموع الفرعي:</span>
+            <strong id="rcptSubTotal">0.00</strong>
+        </div>
+        <div style="font-size: 0.85rem; margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span>الخصم:</span>
+            <strong id="rcptDiscount">0%</strong>
+        </div>
+        <div style="font-size: 1rem; font-weight: bold; margin-top: 8px; padding-top: 8px; border-top: 2px solid #333; display: flex; justify-content: space-between; color: #198754;">
+            <span>الإجمالي النهائي:</span>
+            <span id="rcptGrandTotal">0.00 ج.م</span>
+        </div>
+        <div id="rcptGreeting" style="margin-top: 15px; text-align: center; font-size: 0.8rem; font-style: italic; color: #555; border-top: 1px dotted #ccc; padding-top: 10px; display: none;">
+        </div>
+    </div>
+</div>
+
+<!-- Modal تعديل مستخدم -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-edit"></i> تعديل بيانات المستخدم</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserOldName">
+                <div class="mb-2">
+                    <label class="form-label small">اسم المستخدم (لا يمكن تغييره):</label>
+                    <input type="text" id="editUserUsernameView" class="form-control form-control-sm" readonly>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">الاسم:</label>
+                    <input type="text" id="editUserName" class="form-control form-control-sm">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية):</label>
+                    <input type="text" id="editUserPassword" class="form-control form-control-sm">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">الدور:</label>
+                    <select id="editUserRole" class="form-select form-select-sm">
+                        <option value="cashier">كاشير</option>
+                        <option value="admin">مدير</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary btn-sm" id="saveUserEditBtn">حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal تعديل الفاتورة -->
+<div class="modal fade" id="editInvoiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تعديل الفاتورة (كل صنف في صف مستقل)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editInvId">
+                <div class="table-responsive">
+                    <table class="table table-sm text-center align-middle">
+                        <thead>
+                            <tr class="table-light">
+                                <th>اسم الصنف</th>
+                                <th>السعر</th>
+                                <th>الكمية</th>
+                                <th>الإجمالي الفرعي</th>
+                            </tr>
+                        </thead>
+                        <tbody id="editInvoiceItemsTable"></tbody>
+                    </table>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">نسبة الخصم (%):</label>
+                    <input type="number" id="editInvDiscount" class="form-control form-control-sm" min="0" max="100">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary btn-sm" id="saveEditedInvBtn">حفظ وتحديث الفاتورة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+    let currentUser = null;
+    let businessName = "كافيه همام";
+    let whatsappEnabled = false;
+    let greetingEnabled = false;
+    let greetingText = "شكراً لزيارتكم، نتمنى لكم وقتاً ممتعاً!";
+
+    let allItems = [
+        {code: "P001", name: "فليفر قرفه", price: 35.0, category: "additions"},
+        {code: "P002", name: "فليفر كراميل مملح", price: 35.0, category: "additions"},
+        {code: "P003", name: "فليفر فانليا", price: 35.0, category: "additions"},
+        {code: "P004", name: "فليفر نعناع اخضر", price: 35.0, category: "additions"},
+        {code: "P005", name: "فليفر موهيتو", price: 35.0, category: "additions"},
+        {code: "P006", name: "صوص شوكلت", price: 35.0, category: "additions"},
+        {code: "P007", name: "صوص كراميل", price: 35.0, category: "additions"},
+        {code: "P008", name: "صوص نيوتيلا", price: 40.0, category: "additions"},
+        {code: "P009", name: "صوص وايت شوكلت", price: 35.0, category: "additions"},
+        {code: "P010", name: "حليب", price: 40.0, category: "additions"},
+        {code: "P011", name: "صوص ميكس بيري", price: 30.0, category: "additions"},
+        {code: "P012", name: "صوص بلوبيرى", price: 30.0, category: "additions"},
+        {code: "P013", name: "صوص ليمون", price: 30.0, category: "additions"},
+        {code: "P014", name: "فرابي _ لاتية", price: 110.0, category: "BLENDED COFFEE"},
+        {code: "P015", name: "فرابي _ كراميل", price: 140.0, category: "BLENDED COFFEE"},
+        {code: "P016", name: "فرابي _ سولتد كراميل", price: 140.0, category: "BLENDED COFFEE"},
+        {code: "P017", name: "فرابي _ موكا", price: 110.0, category: "BLENDED COFFEE"},
+        {code: "P018", name: "فرابي _وايت موكا", price: 120.0, category: "BLENDED COFFEE"},
+        {code: "P019", name: "تشيز كيك كلاسيك", price: 110.0, category: "DESSERT"},
+        {code: "P020", name: "مولتن كيك", price: 140.0, category: "DESSERT"},
+        {code: "P021", name: "وافل شوكلت", price: 110.0, category: "DESSERT"},
+        {code: "P022", name: "بان كيك شوكلت", price: 110.0, category: "DESSERT"},
+        {code: "P023", name: "عصير مانجو فريش", price: 70.0, category: "FRESH JUICE"},
+        {code: "P024", name: "عصير جوافة فريش", price: 60.0, category: "FRESH JUICE"},
+        {code: "P025", name: "عصير فراولة فريش", price: 60.0, category: "FRESH JUICE"},
+        {code: "P026", name: "عصير ليمون فريش", price: 50.0, category: "FRESH JUICE"},
+        {code: "P027", name: "عصير ليمون نعناع فريش", price: 60.0, category: "FRESH JUICE"},
+        {code: "P028", name: "عصير برتقال فريش", price: 65.0, category: "FRESH JUICE"},
+        {code: "P029", name: "ايس تي بري", price: 70.0, category: "ICE COFFEE"},
+        {code: "P030", name: "اسبريسو سنجل", price: 40.0, category: "HOT DRINKS"},
+        {code: "P031", name: "اسبريسو دابل", price: 55.0, category: "HOT DRINKS"},
+        {code: "P032", name: "تركش كافيه سنجل", price: 35.0, category: "HOT DRINKS"},
+        {code: "P033", name: "تركش كافيه دابل", price: 50.0, category: "HOT DRINKS"},
+        {code: "P034", name: "تلاتة في واحد", price: 40.0, category: "HOT DRINKS"},
+        {code: "P035", name: "نسكافيه بلاك", price: 40.0, category: "HOT DRINKS"},
+        {code: "P036", name: "فرنش كافيه", price: 55.0, category: "HOT DRINKS"},
+        {code: "P037", name: "هوت شوكلت", price: 65.0, category: "HOT DRINKS NON"},
+        {code: "P038", name: "سحلب", price: 55.0, category: "HOT DRINKS NON"},
+        {code: "P039", name: "شاي كشري", price: 25.0, category: "HOT DRINKS NON"},
+        {code: "P040", name: "شاي فتلة", price: 30.0, category: "HOT DRINKS NON"},
+        {code: "P041", name: "شاي اعشاب", price: 35.0, category: "HOT DRINKS NON"},
+        {code: "P042", name: "ايدج لاتيه", price: 75.0, category: "ICE COFFEE"},
+        {code: "P043", name: "ايس اسبريسو", price: 60.0, category: "ICE COFFEE"},
+        {code: "P044", name: "ايس كابتشينو", price: 85.0, category: "ICE COFFEE"},
+        {code: "P045", name: "ايس موكا", price: 90.0, category: "ICE COFFEE"},
+        {code: "P046", name: "ايس وايت موكا", price: 95.0, category: "ICE COFFEE"},
+        {code: "P047", name: "ميلك شيك فانيليا", price: 80.0, category: "MILK SHAKES"},
+        {code: "P048", name: "ميلك شيك شوكولاتة", price: 90.0, category: "MILK SHAKES"},
+        {code: "P049", name: "ميلك شيك كراميل", price: 90.0, category: "MILK SHAKES"},
+        {code: "P050", name: "ميلك شيك مانجو", price: 95.0, category: "MILK SHAKES"},
+        {code: "P051", name: "موهيتو كلاسيك", price: 75.0, category: "MOJITO"},
+        {code: "P052", name: "موهيتو بلوبيري", price: 85.0, category: "MOJITO"},
+        {code: "P053", name: "موهيتو فراولة", price: 85.0, category: "MOJITO"},
+        {code: "P054", name: "سموثي مانجو", price: 85.0, category: "SMOOTHIE"},
+        {code: "P055", name: "سموثي فراولة", price: 80.0, category: "SMOOTHIE"},
+        {code: "P056", name: "صودا مياه", price: 25.0, category: "SODA"},
+        {code: "P057", name: "كانز بيبسي", price: 35.0, category: "SODA"}
+    ];
+    let cart = [];
+    let currentCategory = 'ALL';
+    let invoices = [];
+    let returnInvoices = [];
+    let wasteInvoices = [];
+    let activeWasteInvoice = null;
+    let permissions = { pos: true, settings: false, invoices_view: true, returns: true, cashier_edit: false };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const dateInput = document.getElementById('saleDateInput');
+        if(dateInput) dateInput.value = todayStr;
+        const topToday = new Date();
+        const topLocalToday = new Date(topToday.getTime() - topToday.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        document.getElementById('topItemsDateFrom').value = topLocalToday.slice(0, 8) + '01';
+        document.getElementById('topItemsDateTo').value = topLocalToday;
+        const dailyFrom = document.getElementById('dailyDateFrom');
+        const dailyTo = document.getElementById('dailyDateTo');
+        if(dailyFrom) dailyFrom.value = todayStr;
+        if(dailyTo) dailyTo.value = todayStr;
+
+        const savedItems = localStorage.getItem('cafe_items');
+        if(savedItems) try { allItems = JSON.parse(savedItems); } catch(e){}
+
+        const savedInv = localStorage.getItem('cafe_invoices');
+        if(savedInv) try { invoices = JSON.parse(savedInv); } catch(e){}
+
+        const savedReturns = localStorage.getItem('cafe_returns');
+        if(savedReturns) try { returnInvoices = JSON.parse(savedReturns); } catch(e){}
+
+        const savedWaste = localStorage.getItem('cafe_waste');
+        if(savedWaste) try { wasteInvoices = JSON.parse(savedWaste); } catch(e){}
+
+        const savedPerm = localStorage.getItem('cafe_permissions');
+        if(savedPerm) try { permissions = JSON.parse(savedPerm); } catch(e){}
+
+        const savedBizName = localStorage.getItem('cafe_business_name');
+        if(savedBizName) { businessName = savedBizName; }
+
+        const savedWhatsapp = localStorage.getItem('cafe_whatsapp_enabled');
+        if(savedWhatsapp !== null) { whatsappEnabled = (savedWhatsapp === 'true'); }
+
+        const savedGreetingEnabled = localStorage.getItem('cafe_greeting_enabled');
+        if(savedGreetingEnabled !== null) { greetingEnabled = (savedGreetingEnabled === 'true'); }
+
+        const savedGreetingText = localStorage.getItem('cafe_greeting_text');
+        if(savedGreetingText) { greetingText = savedGreetingText; }
+
+        updateBusinessNameUI();
+        loadUsers();
+        renderLoginUsers();
+        initViewMode();
+
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('usernameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('passwordInput').focus();
+        });
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') login();
+        });
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('checkoutBtn').addEventListener('click', checkout);
+        
+        // إعدادات
+        document.getElementById('saveBusinessNameBtn').addEventListener('click', saveBusinessName);
+        document.getElementById('saveGreetingBtn').addEventListener('click', saveGreetingSettings);
+        document.getElementById('greetingToggle').addEventListener('change', toggleGreetingFeature);
+        document.getElementById('exportBtnSetting').addEventListener('click', exportProducts);
+        document.getElementById('importFileSetting').addEventListener('change', importProducts);
+        document.getElementById('whatsappFeatureToggle').addEventListener('change', toggleWhatsappFeature);
+
+        document.getElementById('searchInvoicesBtn').addEventListener('click', searchInvoices);
+        document.getElementById('refreshDailyBtn').addEventListener('click', loadDailyReport);
+        document.getElementById('exportDailyPdfBtn').addEventListener('click', exportDailyReportPdf);
+        document.getElementById('exportDailyExcelBtn').addEventListener('click', exportDailyReportExcel);
+        document.getElementById('exportDbJsonBtn').addEventListener('click', exportDatabaseJson);
+        document.getElementById('importDbJsonFile').addEventListener('change', importDatabaseJson);
+        document.getElementById('searchDailyBtn').addEventListener('click', loadDailyReport);
+        document.getElementById('searchTopItemsBtn').addEventListener('click', loadTopItemsReport);
+        document.getElementById('refreshTopItemsBtn').addEventListener('click', loadTopItemsReport);
+        document.getElementById('topItems-tab').addEventListener('shown.bs.tab', function() { if (!topItemsReportData.length) loadTopItemsReport(); });
+        document.getElementById('topItemsSort').addEventListener('change', loadTopItemsReport);
+        document.getElementById('topItemsLimit').addEventListener('change', loadTopItemsReport);
+        document.getElementById('topItemsSearch').addEventListener('input', renderTopItemsReport);
+        document.getElementById('exportTopItemsBtn').addEventListener('click', exportTopItemsReport);
+        document.getElementById('saveEditedInvBtn').addEventListener('click', saveMultiRowEditedInvoice);
+        document.getElementById('discountInput').addEventListener('input', updateCartUI);
+        document.getElementById('searchBox').addEventListener('keyup', filterItems);
+        document.getElementById('viewMode').addEventListener('change', searchInvoices);
+
+        // واتساب المودال
+        document.getElementById('sendWhatsappBtn').addEventListener('click', sendWhatsappMessage);
+        document.getElementById('skipWhatsappBtn').addEventListener('click', skipWhatsappMessage);
+
+        // مرتجعات
+        document.getElementById('searchReturnBtn').addEventListener('click', searchInvoicesForReturnsTab);
+        document.getElementById('returnSearchText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchInvoicesForReturnsTab();
+        });
+        document.getElementById('confirmReturnBtn').addEventListener('click', confirmReturnInvoice);
+        document.getElementById('cancelReturnBtn').addEventListener('click', cancelReturnSelection);
+
+        // الهادر
+        document.getElementById('searchWasteBtn').addEventListener('click', searchInvoicesForWasteTab);
+        document.getElementById('wasteSearchText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchInvoicesForWasteTab();
+        });
+        document.getElementById('confirmWasteBtn').addEventListener('click', confirmWaste);
+        document.getElementById('cancelWasteBtn').addEventListener('click', cancelWasteSelection);
+
+        // إدارة المستخدمين والصلاحيات
+        document.getElementById('addUserBtn').addEventListener('click', addUser);
+        document.getElementById('saveUserEditBtn').addEventListener('click', saveUserEdit);
+        const usersBody = document.getElementById('usersTableBody');
+        usersBody.addEventListener('change', function(e) {
+            const cb = e.target.closest('.user-perm');
+            if(cb) updateUserPerm(cb.getAttribute('data-user'), cb.getAttribute('data-perm'), cb.checked);
+        });
+        usersBody.addEventListener('click', function(e) {
+            const ed = e.target.closest('.user-edit');
+            if(ed) return openEditUser(ed.getAttribute('data-user'));
+            const del = e.target.closest('.user-del');
+            if(del) return deleteUser(del.getAttribute('data-user'));
+        });
+
+        loadReturnsHistory();
+        searchInvoicesForReturnsTab();
+    });
+
+    function updateBusinessNameUI() {
+        document.getElementById('pageTitle').innerText = businessName + ' - نظام المبيعات والمرتجعات';
+        document.getElementById('appBrandHeader').innerHTML = `<i class="fas fa-coffee"></i> ${businessName}`;
+        document.getElementById('loginBrandName').innerHTML = `<i class="fas fa-coffee"></i> ${businessName}`;
+        document.getElementById('settingBusinessName').value = businessName;
+        document.getElementById('whatsappFeatureToggle').checked = whatsappEnabled;
+        document.getElementById('greetingToggle').checked = greetingEnabled;
+        document.getElementById('settingGreetingText').value = greetingText;
+    }
+
+    function saveBusinessName() {
+        if(currentUser !== 'admin' && !permissions.settings) {
+            alert('عفواً، لا توجد صلاحية لتعديل الإعدادات!');
+            return;
+        }
+        let val = document.getElementById('settingBusinessName').value.trim();
+        if(val) {
+            businessName = val;
+            localStorage.setItem('cafe_business_name', businessName);
+            updateBusinessNameUI();
+            showSettingsMsg('تم حفظ اسم النشاط بنجاح!');
+        }
+    }
+
+    function saveGreetingSettings() {
+        if(currentUser !== 'admin' && !permissions.settings) {
+            alert('عفواً، لا توجد صلاحية لتعديل الإعدادات!');
+            return;
+        }
+        let val = document.getElementById('settingGreetingText').value.trim();
+        if(val) {
+            greetingText = val;
+            localStorage.setItem('cafe_greeting_text', greetingText);
+            showSettingsMsg('تم حفظ الرسالة الترحيبية بنجاح!');
+        }
+    }
+
+    function toggleGreetingFeature() {
+        if(currentUser !== 'admin' && !permissions.settings) {
+            alert('عفواً، لا توجد صلاحية لتعديل الإعدادات!');
+            document.getElementById('greetingToggle').checked = greetingEnabled;
+            return;
+        }
+        greetingEnabled = document.getElementById('greetingToggle').checked;
+        localStorage.setItem('cafe_greeting_enabled', greetingEnabled);
+        showSettingsMsg('تم تحديث إعدادات الرسالة الترحيبية بنجاح!');
+    }
+
+    function toggleWhatsappFeature() {
+        if(currentUser !== 'admin' && !permissions.settings) {
+            alert('عفواً، لا توجد صلاحية لتعديل الإعدادات!');
+            document.getElementById('whatsappFeatureToggle').checked = whatsappEnabled;
+            return;
+        }
+        whatsappEnabled = document.getElementById('whatsappFeatureToggle').checked;
+        localStorage.setItem('cafe_whatsapp_enabled', whatsappEnabled);
+        showSettingsMsg('تم تحديث إعدادات الواتساب بنجاح!');
+    }
+
+    function showSettingsMsg(text) {
+        let msg = document.getElementById('settingsSaveMsg');
+        msg.innerText = text;
+        setTimeout(() => msg.innerText = '', 2500);
+    }
+
+    // ===== تصدير واستيراد قاعدة البيانات (JSON) =====
+    const DB_KEYS = ['cafe_items', 'cafe_invoices', 'cafe_returns', 'cafe_waste', 'cafe_users', 'cafe_permissions',
+                     'cafe_business_name', 'cafe_whatsapp_enabled', 'cafe_greeting_enabled', 'cafe_greeting_text'];
+
+    function showDbMsg(text, isError) {
+        const el = document.getElementById('dbJsonMsg');
+        el.className = 'form-text text-center fw-bold mt-1 ' + (isError ? 'text-danger' : 'text-success');
+        el.innerText = text;
+    }
+
+    function exportDatabaseJson() {
+        if(currentUser !== 'admin') { alert('عفواً، تصدير قاعدة البيانات للمدير فقط!'); return; }
+        const out = { app: 'cafe-pos', version: 1, exportedAt: new Date().toISOString(), data: {} };
+        DB_KEYS.forEach(k => {
+            const v = localStorage.getItem(k);
+            if(v === null) return;
+            try { out.data[k] = JSON.parse(v); } catch(e) { out.data[k] = v; }
+        });
+        const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cafe_database_' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        showDbMsg('تم تصدير قاعدة البيانات بنجاح!');
+    }
+
+    function importDatabaseJson(event) {
+        const input = event.target;
+        const file = input.files[0];
+        if(!file) return;
+        if(currentUser !== 'admin') { alert('عفواً، استيراد قاعدة البيانات للمدير فقط!'); input.value = ''; return; }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            let obj;
+            try { obj = JSON.parse(e.target.result); } catch(err) { showDbMsg('الملف ليس بصيغة JSON صحيحة!', true); input.value = ''; return; }
+            const data = obj && obj.data;
+            if(!data || typeof data !== 'object' || !DB_KEYS.some(k => k in data)) {
+                showDbMsg('الملف لا يحتوي على بيانات النظام المتوقعة!', true); input.value = ''; return;
+            }
+            const arrayKeys = ['cafe_items', 'cafe_invoices', 'cafe_returns', 'cafe_waste', 'cafe_users'];
+            for(const k of arrayKeys) {
+                if(k in data && !Array.isArray(data[k])) { showDbMsg('بنية الملف غير صحيحة (' + k + ')', true); input.value = ''; return; }
+            }
+            if(data.cafe_users && !data.cafe_users.some(u => u && u.role === 'admin' && u.username && u.password)) {
+                showDbMsg('الملف لا يحتوي على مستخدم مدير صالح!', true); input.value = ''; return;
+            }
+            const counts = 'الأصناف: ' + (data.cafe_items ? data.cafe_items.length : 0) +
+                ' | الفواتير: ' + (data.cafe_invoices ? data.cafe_invoices.length : 0) +
+                ' | المرتجعات: ' + (data.cafe_returns ? data.cafe_returns.length : 0) +
+                ' | الهادر: ' + (data.cafe_waste ? data.cafe_waste.length : 0);
+            if(!confirm('سيتم استبدال كل البيانات الحالية بمحتوى الملف:\n' + counts + '\n\nهل تريد المتابعة؟')) { input.value = ''; return; }
+
+            DB_KEYS.forEach(k => {
+                if(k in data) {
+                    const v = data[k];
+                    localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+                } else {
+                    localStorage.removeItem(k);
+                }
+            });
+            alert('تم استيراد قاعدة البيانات بنجاح! سيتم إعادة تحميل التطبيق الآن.');
+            location.reload();
+        };
+        reader.readAsText(file);
+    }
+
+    // ===== إدارة المستخدمين والصلاحيات =====
+    const PERM_DEFS = [
+        {key: 'pos', label: 'شاشة البيع'},
+        {key: 'invoices_view', label: 'فواتير المبيعات'},
+        {key: 'returns', label: 'المرتجعات'},
+        {key: 'waste', label: 'الهادر'},
+        {key: 'daily', label: 'تقرير اليوم'},
+        {key: 'topItems', label: 'الأكثر مبيعاً'},
+        {key: 'settings', label: 'الإعدادات والاستيراد'},
+        {key: 'cashier_edit', label: 'تعديل/إلغاء الفواتير'}
+    ];
+    let users = [];
+    let currentUserObj = null;
+
+    function allPerms(val) {
+        const o = {};
+        PERM_DEFS.forEach(d => o[d.key] = val);
+        return o;
+    }
+
+    function newUserDefaultPerms() {
+        const o = allPerms(false);
+        o.pos = true; o.invoices_view = true; o.returns = true;
+        return o;
+    }
+
+    function saveUsers() {
+        localStorage.setItem('cafe_users', JSON.stringify(users));
+    }
+
+    function loadUsers() {
+        const saved = localStorage.getItem('cafe_users');
+        if(saved) { try { users = JSON.parse(saved); } catch(e) { users = []; } }
+        if(!Array.isArray(users) || !users.some(u => u.role === 'admin')) {
+            // أول تشغيل: إنشاء المستخدمين الافتراضيين (مع ترحيل صلاحيات الكاشير القديمة)
+            const p = permissions || {};
+            const cashierPerms = {
+                pos: p.pos !== false, invoices_view: p.invoices_view !== false, returns: p.returns !== false,
+                daily: true, topItems: true, settings: !!p.settings, cashier_edit: !!p.cashier_edit
+            };
+            users = [
+                {username: 'admin', name: 'مدير النظام', password: '321', role: 'admin', perms: allPerms(true)},
+                {username: 'kashier', name: 'كاشير', password: '123', role: 'cashier', perms: cashierPerms}
+            ];
+            saveUsers();
+        }
+    }
+
+    // ===== نظام العرض (تلقائي / هاتف / كمبيوتر) =====
+    let viewPref = 'auto';
+
+    function applyViewMode() {
+        const eff = viewPref === 'auto' ? (window.innerWidth < 768 ? 'phone' : 'desktop') : viewPref;
+        document.body.classList.remove('view-phone', 'view-desktop');
+        document.body.classList.add('view-' + eff);
+        // كمبيوتر على الهاتف: عرض الصفحة بعرض سطح المكتب؛ غير ذلك: عرض الجهاز (عمودي)
+        const meta = document.getElementById('viewportMeta');
+        if(meta) meta.setAttribute('content', viewPref === 'desktop' ? 'width=1100' : 'width=device-width, initial-scale=1.0');
+        document.querySelectorAll('.view-mode-select').forEach(s => s.value = viewPref);
+    }
+
+    function initViewMode() {
+        try { viewPref = localStorage.getItem('cafe_view_mode') || 'auto'; } catch(e) {}
+        document.querySelectorAll('.view-mode-select').forEach(s => s.addEventListener('change', function() {
+            viewPref = this.value;
+            try { localStorage.setItem('cafe_view_mode', viewPref); } catch(e) {}
+            applyViewMode();
+        }));
+        window.addEventListener('resize', function() { if(viewPref === 'auto') applyViewMode(); });
+        applyViewMode();
+    }
+
+    function renderLoginUsers() {
+        // لا تُعرض أسماء المستخدمين في شاشة الدخول (الدخول بكتابة اسم المستخدم)
+        const inp = document.getElementById('usernameInput');
+        if(inp) inp.value = '';
+    }
+
+    function showPermMsg(text, isError) {
+        const msg = document.getElementById('permMsg');
+        if(!msg) return;
+        msg.className = (isError ? 'text-danger' : 'text-success') + ' small text-center fw-bold mt-2';
+        msg.innerText = text;
+        setTimeout(() => msg.innerText = '', 2500);
+    }
+
+    function renderUsersTable() {
+        const tbody = document.getElementById('usersTableBody');
+        if(!tbody) return;
+        tbody.innerHTML = users.map(u => {
+            const isAdmin = u.role === 'admin';
+            const uname = escapeTopItemText(u.username);
+            const isSelf = currentUserObj && currentUserObj.username === u.username;
+            const cells = PERM_DEFS.map(d =>
+                `<td><input type="checkbox" class="form-check-input user-perm" data-user="${uname}" data-perm="${d.key}" ${(isAdmin || (u.perms && u.perms[d.key])) ? 'checked' : ''} ${isAdmin ? 'disabled' : ''}></td>`
+            ).join('');
+            return `<tr>
+                <td class="text-start fw-bold">${escapeTopItemText(u.name)}${isSelf ? ' <span class="badge bg-info">أنت</span>' : ''}</td>
+                <td>${uname}</td>
+                <td><span class="badge ${isAdmin ? 'bg-danger' : 'bg-success'}">${isAdmin ? 'مدير' : 'كاشير'}</span></td>
+                ${cells}
+                <td class="text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary py-0 px-1 user-edit" data-user="${uname}" title="تعديل"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1 user-del" data-user="${uname}" title="حذف"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function updateUserPerm(username, key, checked) {
+        const u = users.find(x => x.username === username);
+        if(!u || u.role === 'admin') return;
+        if(!u.perms) u.perms = allPerms(false);
+        u.perms[key] = checked;
+        saveUsers();
+        showPermMsg('تم حفظ الصلاحيات! (تسري على المستخدم عند دخوله التالي)');
+    }
+
+    function addUser() {
+        const name = document.getElementById('newUserName').value.trim();
+        const username = document.getElementById('newUserUsername').value.trim();
+        const password = document.getElementById('newUserPassword').value.trim();
+        const role = document.getElementById('newUserRole').value;
+
+        if(!name || !username || !password) { showPermMsg('يرجى إدخال الاسم واسم المستخدم وكلمة المرور', true); return; }
+        if(users.some(u => u.username.toLowerCase() === username.toLowerCase())) { showPermMsg('اسم المستخدم موجود مسبقاً!', true); return; }
+        if(role !== 'admin' && username.toLowerCase() === 'admin') { showPermMsg('اسم المستخدم "admin" محجوز للمدير', true); return; }
+
+        users.push({username, name, password, role, perms: role === 'admin' ? allPerms(true) : newUserDefaultPerms()});
+        saveUsers();
+        ['newUserName', 'newUserUsername', 'newUserPassword'].forEach(id => document.getElementById(id).value = '');
+        renderUsersTable();
+        renderLoginUsers();
+        showPermMsg('تمت إضافة المستخدم بنجاح! حدد صلاحياته من الجدول.');
+    }
+
+    function openEditUser(username) {
+        const u = users.find(x => x.username === username);
+        if(!u) return;
+        document.getElementById('editUserOldName').value = u.username;
+        document.getElementById('editUserName').value = u.name;
+        document.getElementById('editUserUsernameView').value = u.username;
+        document.getElementById('editUserPassword').value = '';
+        document.getElementById('editUserRole').value = u.role;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('editUserModal')).show();
+    }
+
+    function saveUserEdit() {
+        const u = users.find(x => x.username === document.getElementById('editUserOldName').value);
+        if(!u) return;
+        const name = document.getElementById('editUserName').value.trim();
+        const pass = document.getElementById('editUserPassword').value.trim();
+        const role = document.getElementById('editUserRole').value;
+        if(!name) { alert('يرجى إدخال الاسم'); return; }
+
+        if(role !== u.role) {
+            if(u.role === 'admin' && users.filter(x => x.role === 'admin').length <= 1) { alert('لا يمكن تغيير دور المدير الوحيد في النظام!'); return; }
+            if(currentUserObj && currentUserObj.username === u.username) { alert('لا يمكنك تغيير دور حسابك الحالي!'); return; }
+            if(role !== 'admin' && u.username.toLowerCase() === 'admin') { alert('اسم المستخدم "admin" محجوز للمدير'); return; }
+            u.role = role;
+            u.perms = role === 'admin' ? allPerms(true) : newUserDefaultPerms();
+        }
+        u.name = name;
+        if(pass) u.password = pass;
+        saveUsers();
+        bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+        renderUsersTable();
+        renderLoginUsers();
+        showPermMsg('تم تعديل بيانات المستخدم بنجاح!');
+    }
+
+    function deleteUser(username) {
+        const u = users.find(x => x.username === username);
+        if(!u) return;
+        if(currentUserObj && currentUserObj.username === u.username) { alert('لا يمكنك حذف حسابك الحالي!'); return; }
+        if(u.role === 'admin' && users.filter(x => x.role === 'admin').length <= 1) { alert('لا يمكن حذف المدير الوحيد في النظام!'); return; }
+        if(!confirm('هل أنت متأكد من حذف المستخدم "' + u.name + '"؟')) return;
+        users = users.filter(x => x.username !== username);
+        saveUsers();
+        renderUsersTable();
+        renderLoginUsers();
+        showPermMsg('تم حذف المستخدم.');
+    }
+
+    // إظهار التبويبات حسب صلاحيات المستخدم الحالي
+    function applyUserTabs() {
+        const isAdmin = currentUser === 'admin';
+        const map = {'pos-tab': 'pos', 'invoices-tab': 'invoices_view', 'returns-tab': 'returns', 'waste-tab': 'waste', 'daily-tab': 'daily', 'topItems-tab': 'topItems', 'settings-tab': 'settings'};
+        let first = null;
+        Object.keys(map).forEach(id => {
+            const el = document.getElementById(id);
+            const show = isAdmin || permissions[map[id]];
+            el.style.display = show ? 'inline-block' : 'none';
+            el.classList.remove('active');
+            if(show && !first) first = el;
+        });
+        document.getElementById('permissions-tab').style.display = isAdmin ? 'inline-block' : 'none';
+        document.getElementById('dbBackupSection').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('permissions-tab').classList.remove('active');
+        document.querySelectorAll('#appScreen .tab-pane').forEach(p => p.classList.remove('show', 'active'));
+        if(first) bootstrap.Tab.getOrCreateInstance(first).show();
+    }
+
+    function login() {
+        const uname = document.getElementById('usernameInput').value.trim().toLowerCase();
+        const pass = document.getElementById('passwordInput').value.trim();
+        const u = users.find(x => x.username.toLowerCase() === uname);
+
+        if(!u || String(u.password) !== pass) {
+            document.getElementById('loginError').innerText = 'كلمة المرور أو المستخدم غير صحيح!';
+            return;
+        }
+
+        currentUserObj = u;
+        currentUser = u.role === 'admin' ? 'admin' : u.username;
+        permissions = u.role === 'admin' ? allPerms(true) : Object.assign(allPerms(false), u.perms || {});
+
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appScreen').style.display = 'block';
+
+        const badge = document.getElementById('userRoleBadge');
+        if(u.role === 'admin') {
+            badge.innerText = 'مدير النظام';
+            badge.className = 'badge bg-danger';
+        } else {
+            badge.innerText = u.name;
+            badge.className = 'badge bg-success';
+        }
+        applyUserTabs();
+        renderUsersTable();
+        loadWasteHistory();
+
+        buildCategories();
+        displayItems(allItems);
+        loadInvoices();
+        loadDailyReport();
+        loadReturnsHistory();
+        searchInvoicesForReturnsTab();
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('loginError').innerText = '';
+        document.getElementById('appScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'block';
+        currentUserObj = null;
+        renderLoginUsers();
+    }
+
+    function importProducts(event) {
+        if(currentUser !== 'admin' && !permissions.settings) {
+            alert('عفواً، لا توجد صلاحية للاستيراد!');
+            return;
+        }
+        const file = event.target.files[0];
+        if(!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                if(json.length === 0) return;
+
+                let newItems = [];
+                json.forEach((row, index) => {
+                    let name = row['الاسم'] || row['Name'] || row['اسم الصنف'] || Object.values(row)[0];
+                    let category = row['القسم'] || row['Category'] || Object.values(row)[1] || 'عام';
+                    let price = row['سعر البيع'] || row['Price'] || row['السعر'] || Object.values(row)[2] || 0;
+                    if(name) {
+                        newItems.push({code: 'IMP' + (index + 1), name: String(name).trim(), price: parseFloat(price) || 0, category: String(category).trim()});
+                    }
+                });
+
+                if(newItems.length > 0) {
+                    allItems = newItems;
+                    localStorage.setItem('cafe_items', JSON.stringify(allItems));
+                    buildCategories();
+                    displayItems(allItems);
+                    document.getElementById('importMsgSetting').innerText = `تم استيراد ${newItems.length} صنف بنجاح!`;
+                }
+            } catch(err) {
+                alert('خطأ في قراءة الملف');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function exportProducts() {
+        const worksheet = XLSX.utils.json_to_sheet(allItems);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "المنتجات");
+        XLSX.writeFile(workbook, "Cafe_Products.xlsx");
+    }
+
+    function buildCategories() {
+        const categories = ['ALL', ...new Set(allItems.map(i => i.category))];
+        const container = document.getElementById('categoriesContainer');
+        let html = '<button class="btn btn-dark category-btn active" data-category="ALL">الكل</button>';
+        categories.forEach(cat => {
+            if(cat !== 'ALL') {
+                html += `<button class="btn btn-outline-secondary category-btn" data-category="${cat}">${cat}</button>`;
+            }
+        });
+        container.innerHTML = html;
+
+        container.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                filterCategory(this.getAttribute('data-category'), this);
+            });
+        });
+    }
+
+    function filterCategory(cat, btn) {
+        currentCategory = cat;
+        document.querySelectorAll('.category-btn').forEach(b => {
+            b.classList.remove('btn-dark');
+            b.classList.add('btn-outline-secondary');
+        });
+        if(btn) {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-dark');
+        }
+        displayItems(allItems);
+    }
+
+    function displayItems(items) {
+        const container = document.getElementById('itemsContainer');
+        let filtered = items;
+        if(currentCategory !== 'ALL') {
+            filtered = items.filter(i => i.category === currentCategory);
+        }
+        const query = document.getElementById('searchBox').value.toLowerCase();
+        if(query) {
+            filtered = filtered.filter(i => i.name.toLowerCase().includes(query));
+        }
+
+        updateItemsCounts(filtered.length);
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center text-muted py-3">لا توجد أصناف</div>';
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(item => {
+            html += `
+                <div class="col-4">
+                    <div class="product-card p-2 text-center item-card" data-code="${item.code}">
+                        <div class="fw-bold text-dark text-truncate" style="font-size: 0.75rem;">${item.name}</div>
+                        <div class="text-primary fw-semibold" style="font-size: 0.75rem;">${item.price} ج</div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        container.querySelectorAll('.item-card').forEach(card => {
+            card.addEventListener('click', function() {
+                addToCart(this.getAttribute('data-code'));
+            });
+        });
+    }
+
+    function updateItemsCounts(shown) {
+        document.getElementById('itemsCountTotal').innerText = allItems.length;
+        document.getElementById('categoriesCountTotal').innerText = new Set(allItems.map(i => i.category)).size;
+        document.getElementById('itemsCountShown').innerText = shown;
+    }
+
+    function filterItems() {
+        displayItems(allItems);
+    }
+
+    function addToCart(code) {
+        const item = allItems.find(i => i.code === code);
+        if (!item) return;
+        const existing = cart.find(c => c.code === code);
+        if (existing) {
+            existing.qty += 1;
+            existing.total = existing.qty * existing.price;
+        } else {
+            cart.push({ code: item.code, name: item.name, price: item.price, qty: 1, total: item.price });
+        }
+        updateCartUI();
+    }
+
+    function changeQty(code, delta) {
+        const item = cart.find(c => c.code === code);
+        if (item) {
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(c => c.code !== code);
+            } else {
+                item.total = item.qty * item.price;
+            }
+            updateCartUI();
+        }
+    }
+
+    function updateCartUI() {
+        const tbody = document.getElementById('cartTableBody');
+        if (cart.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-muted small">السلة فارغة</td></tr>';
+            document.getElementById('subTotal').innerText = '0.00';
+            document.getElementById('grandTotal').innerText = '0.00';
+            return;
+        }
+        let html = '';
+        let subTotal = 0;
+        cart.forEach(item => {
+            subTotal += item.total;
+            html += `
+                <tr>
+                    <td class="text-truncate" style="max-width: 90px; font-size:0.75rem;">${item.name}</td>
+                    <td style="font-size:0.75rem;">${item.price}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-1 qty-minus" data-code="${item.code}">-</button>
+                        <span class="mx-1" style="font-size:0.75rem;">${item.qty}</span>
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-1 qty-plus" data-code="${item.code}">+</button>
+                    </td>
+                    <td style="font-size:0.75rem;">${item.total}</td>
+                    <td><button class="btn btn-sm text-danger p-0 item-remove" data-code="${item.code}"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+
+        tbody.querySelectorAll('.qty-minus').forEach(b => b.addEventListener('click', () => changeQty(b.getAttribute('data-code'), -1)));
+        tbody.querySelectorAll('.qty-plus').forEach(b => b.addEventListener('click', () => changeQty(b.getAttribute('data-code'), 1)));
+        tbody.querySelectorAll('.item-remove').forEach(b => b.addEventListener('click', () => removeFromCart(b.getAttribute('data-code'))));
+
+        let discountPercent = parseFloat(document.getElementById('discountInput').value) || 0;
+        let discountAmount = (subTotal * discountPercent) / 100;
+        let grandTotal = subTotal - discountAmount;
+
+        document.getElementById('subTotal').innerText = subTotal.toFixed(2);
+        document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
+    }
+
+    function removeFromCart(code) {
+        cart = cart.filter(c => c.code !== code);
+        updateCartUI();
+    }
+
+    function checkout() {
+        if (cart.length === 0) {
+            alert('السلة فارغة!');
+            return;
+        }
+
+        let todayStr = new Date().toISOString().slice(0, 10);
+        let selectedDate = document.getElementById('saleDateInput').value;
+        if(selectedDate !== todayStr) {
+            alert('عفواً، لا يمكن تسجيل مبيعات إلا بتاريخ اليوم فقط!');
+            document.getElementById('saleDateInput').value = todayStr;
+            return;
+        }
+
+        let subTotal = cart.reduce((sum, i) => sum + i.total, 0);
+        let discountPercent = parseFloat(document.getElementById('discountInput').value) || 0;
+        let discountAmount = (subTotal * discountPercent) / 100;
+        let grandTotal = subTotal - discountAmount;
+
+        let now = new Date();
+        let timeStr = now.toTimeString().slice(0, 8);
+
+        let newInvoice = {
+            id: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+            date: todayStr,
+            datetime: todayStr + ' ' + timeStr,
+            items: JSON.parse(JSON.stringify(cart)),
+            subTotal: subTotal,
+            discountPercent: discountPercent,
+            discountAmount: discountAmount,
+            grandTotal: grandTotal,
+            cashier: currentUser
+        };
+
+        invoices.unshift(newInvoice);
+        localStorage.setItem('cafe_invoices', JSON.stringify(invoices));
+
+        // تفريغ السلة
+        cart = [];
+        document.getElementById('discountInput').value = 0;
+        updateCartUI();
+        loadInvoices();
+        loadDailyReport();
+        searchInvoicesForReturnsTab();
+
+        // التحقق من تفعيل خاصية الواتساب
+        if(whatsappEnabled) {
+            document.getElementById('pendingInvoiceId').value = newInvoice.id;
+            document.getElementById('customerPhoneInput').value = '';
+            var whatsappModal = new bootstrap.Modal(document.getElementById('whatsappModal'));
+            whatsappModal.show();
+        } else {
+            alert('تم إتمام وحفظ الفاتورة رقم: ' + newInvoice.id + ' بنجاح!');
+        }
+    }
+
+    function sendWhatsappMessage() {
+        let invId = document.getElementById('pendingInvoiceId').value;
+        let phone = document.getElementById('customerPhoneInput').value.trim();
+        let inv = invoices.find(i => i.id === invId);
+        
+        var modalEl = document.getElementById('whatsappModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        if(inv) {
+            // تجهيز نص الفاتورة الشامل مع الرسالة الترحيبية المخصصة
+            let itemsText = inv.items.map(i => `- ${i.name} (${i.qty}) * ${i.price} ج.م`).join('%0a');
+            let discAmt = inv.discountAmount !== undefined ? inv.discountAmount : ((inv.subTotal * (inv.discountPercent || 0)) / 100);
+            
+            let greetingPart = "";
+            if(greetingEnabled && greetingText) {
+                greetingPart = `%0a--------------------------%0a_${greetingText}_`;
+            }
+
+            let msg = `*${businessName}*%0aفاتورة مبيعات: ${inv.id}%0aالتاريخ: ${inv.datetime}%0a--------------------------%0a${itemsText}%0a--------------------------%0aالمجموع الفرعي: ${inv.subTotal.toFixed(2)} ج.م%0aالخصم: ${inv.discountPercent}% (${discAmt.toFixed(2)})%0a*الإجمالي النهائي: ${inv.grandTotal.toFixed(2)} ج.م*${greetingPart}`;
+            
+            if(phone) {
+                let cleanPhone = phone.replace(/[^0-9]/g, '');
+                window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
+            } else {
+                window.open(`https://wa.me/?text=${msg}`, '_blank');
+            }
+
+            // توليد وتحميل صورة الفاتورة أيضاً تلقائياً
+            generateAndDownloadInvoiceImage(inv);
+        }
+        alert('تم حفظ الفاتورة بنجاح!');
+    }
+
+    function skipWhatsappMessage() {
+        var modalEl = document.getElementById('whatsappModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        alert('تم حفظ الفاتورة بنجاح!');
+    }
+
+    function generateAndDownloadInvoiceImage(inv) {
+        document.getElementById('rcptBizName').innerText = businessName;
+        document.getElementById('rcptInvId').innerText = `فاتورة رقم: ${inv.id}`;
+        document.getElementById('rcptDatetime').innerText = `التاريخ: ${inv.datetime}`;
+
+        let itemsHtml = '';
+        inv.items.forEach(i => {
+            let itmTot = i.qty * i.price;
+            itemsHtml += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 5px; text-align: right;">${i.name}</td>
+                    <td style="padding: 5px; text-align: center;">${i.qty}</td>
+                    <td style="padding: 5px; text-align: left;">${itmTot.toFixed(2)}</td>
+                </tr>`;
+        });
+        document.getElementById('rcptItemsList').innerHTML = itemsHtml;
+        document.getElementById('rcptSubTotal').innerText = inv.subTotal.toFixed(2) + ' ج.م';
+        let discAmt = inv.discountAmount !== undefined ? inv.discountAmount : ((inv.subTotal * (inv.discountPercent || 0)) / 100);
+        document.getElementById('rcptDiscount').innerText = `${inv.discountPercent}% (${discAmt.toFixed(2)} ج.م)`;
+        document.getElementById('rcptGrandTotal').innerText = inv.grandTotal.toFixed(2) + ' ج.م';
+
+        let greetingEl = document.getElementById('rcptGreeting');
+        if(greetingEnabled && greetingText) {
+            greetingEl.innerText = greetingText;
+            greetingEl.style.display = 'block';
+        } else {
+            greetingEl.style.display = 'none';
+        }
+
+        let receiptCard = document.getElementById('receiptCard');
+        html2canvas(receiptCard, {scale: 2}).then(canvas => {
+            let link = document.createElement('a');
+            link.download = `${inv.id}_receipt.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    }
+
+    // --- نظام المرتجعات المطور ---
+    let activeReturnInvoice = null;
+
+    function searchInvoicesForReturnsTab() {
+        if(typeof searchInvoicesForWasteTab === 'function') searchInvoicesForWasteTab();
+        let dateFrom = document.getElementById('returnDateFrom').value;
+        let dateTo = document.getElementById('returnDateTo').value;
+        let searchText = document.getElementById('returnSearchText').value.toLowerCase().trim();
+
+        let filtered = invoices.filter(inv => {
+            let matchDate = true;
+            if(dateFrom && inv.date < dateFrom) matchDate = false;
+            if(dateTo && inv.date > dateTo) matchDate = false;
+
+            let matchText = true;
+            if(searchText) {
+                let matchId = inv.id.toLowerCase().includes(searchText);
+                let matchItem = inv.items.some(i => i.name.toLowerCase().includes(searchText));
+                matchText = matchId || matchItem;
+            }
+
+            return matchDate && matchText;
+        });
+
+        renderMatchingInvoicesTable(filtered);
+    }
+
+    function renderMatchingInvoicesTable(list) {
+        const table = document.getElementById('matchingInvoicesTable');
+        if(list.length === 0) {
+            table.querySelector('tbody').innerHTML = '<tr><td colspan="5" class="text-muted">لا توجد فواتير مطابقة لبحث المرتجعات</td></tr>';
+            return;
+        }
+
+        let tbody = '';
+        list.forEach(inv => {
+            let itemsSummary = inv.items.map(i => `${i.name} (${i.qty})`).join(', ');
+            tbody += `
+                <tr>
+                    <td><strong>${inv.id}</strong></td>
+                    <td><small>${inv.datetime}</small></td>
+                    <td class="text-start" style="font-size: 0.8rem;">${itemsSummary}</td>
+                    <td><strong class="text-success">${inv.grandTotal.toFixed(2)} ج.م</strong></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger select-inv-return" data-id="${inv.id}"><i class="fas fa-undo"></i> اختر للإرجاع</button>
+                    </td>
+                </tr>`;
+        });
+        table.querySelector('tbody').innerHTML = tbody;
+
+        table.querySelectorAll('.select-inv-return').forEach(btn => {
+            btn.addEventListener('click', function() {
+                selectInvoiceForReturn(this.getAttribute('data-id'));
+            });
+        });
+    }
+
+    function selectInvoiceForReturn(invId) {
+        let inv = invoices.find(i => i.id === invId);
+        if(!inv) return;
+
+        activeReturnInvoice = inv;
+        document.getElementById('retInvIdDisplay').innerText = inv.id;
+        document.getElementById('retInvDateDisplay').innerText = inv.datetime;
+        
+        let discPct = inv.discountPercent || 0;
+        document.getElementById('retSubTotalDisplay').innerText = (inv.subTotal || 0).toFixed(2);
+        document.getElementById('retDiscountDisplay').innerText = discPct + '%';
+        document.getElementById('retGrandTotalDisplay').innerText = (inv.grandTotal || 0).toFixed(2);
+
+        document.getElementById('returnDetailsContainer').style.display = 'block';
+        renderReturnItemsTable(inv);
+
+        document.getElementById('returnDetailsContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderReturnItemsTable(inv) {
+        let discPct = inv.discountPercent || 0;
+        
+        let alreadyReturnedMap = usedQtyMap(inv.id);
+
+        let tbody = '';
+        inv.items.forEach((item, index) => {
+            let alreadyRet = alreadyReturnedMap[item.code] || 0;
+            let maxAvailableQty = item.qty - alreadyRet;
+            let effectivePrice = item.price * (1 - discPct / 100);
+
+            tbody += `
+                <tr>
+                    <td class="fw-bold text-start">${item.name}</td>
+                    <td>${item.price.toFixed(2)} ج.م</td>
+                    <td class="text-primary fw-semibold">${effectivePrice.toFixed(2)} ج.م</td>
+                    <td>${item.qty} ${alreadyRet > 0 ? `<br><small class="text-danger fw-bold">(تم إرجاعه/هدره سابقاً: ${alreadyRet})</small>` : ''}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-center return-item-qty" data-index="${index}" value="0" min="0" max="${maxAvailableQty}" style="width: 85px; margin: auto;" oninput="calcReturnTotal()">
+                        <div class="text-muted" style="font-size: 0.7rem;">المتاح: ${maxAvailableQty}</div>
+                    </td>
+                    <td><span class="text-danger fw-bold return-row-total" id="ret_row_tot_${index}">0.00</span> ج.م</td>
+                </tr>`;
+        });
+        document.getElementById('returnItemsTableBody').innerHTML = tbody;
+        calcReturnTotal();
+    }
+
+    function calcReturnTotal() {
+        if(!activeReturnInvoice) return;
+        let qtyInputs = document.querySelectorAll('.return-item-qty');
+        let discPct = activeReturnInvoice.discountPercent || 0;
+        
+        let alreadyReturnedMap = usedQtyMap(activeReturnInvoice.id);
+
+        let totalReturnVal = 0;
+
+        qtyInputs.forEach(input => {
+            let idx = input.getAttribute('data-index');
+            let item = activeReturnInvoice.items[idx];
+            let alreadyRet = alreadyReturnedMap[item.code] || 0;
+            let maxAvailableQty = item.qty - alreadyRet;
+
+            let retQty = parseInt(input.value) || 0;
+            if(retQty > maxAvailableQty) {
+                retQty = maxAvailableQty;
+                input.value = maxAvailableQty;
+            }
+            if(retQty < 0) {
+                retQty = 0;
+                input.value = 0;
+            }
+
+            let effectivePrice = item.price * (1 - discPct / 100);
+            let rowVal = retQty * effectivePrice;
+            totalReturnVal += rowVal;
+            document.getElementById(`ret_row_tot_${idx}`).innerText = rowVal.toFixed(2);
+        });
+
+        document.getElementById('returnTotalAmount').innerText = totalReturnVal.toFixed(2);
+    }
+
+    function cancelReturnSelection() {
+        activeReturnInvoice = null;
+        document.getElementById('returnItemsTableBody').innerHTML = '';
+        document.getElementById('returnTotalAmount').innerText = '0.00';
+        document.getElementById('returnDetailsContainer').style.display = 'none';
+    }
+
+    function confirmReturnInvoice() {
+        if(!activeReturnInvoice) return;
+
+        let qtyInputs = document.querySelectorAll('.return-item-qty');
+        let discPct = activeReturnInvoice.discountPercent || 0;
+        let returnItems = [];
+        let totalReturnVal = 0;
+
+        qtyInputs.forEach(input => {
+            let idx = input.getAttribute('data-index');
+            let retQty = parseInt(input.value) || 0;
+            if(retQty > 0) {
+                let origItem = activeReturnInvoice.items[idx];
+                let effectivePrice = origItem.price * (1 - discPct / 100);
+                let itemVal = retQty * effectivePrice;
+                totalReturnVal += itemVal;
+                returnItems.push({
+                    code: origItem.code,
+                    name: origItem.name,
+                    price: origItem.price,
+                    effectivePrice: effectivePrice,
+                    qty: retQty,
+                    total: itemVal
+                });
+            }
+        });
+
+        if(returnItems.length === 0) {
+            alert('يرجى تحديد كمية واحدة على الأقل لإتمام المرتجع!');
+            return;
+        }
+
+        let todayStr = new Date().toISOString().slice(0, 10);
+        let now = new Date();
+        let timeStr = now.toTimeString().slice(0, 8);
+
+        let returnInv = {
+            id: 'RET-' + Math.floor(1000 + Math.random() * 9000),
+            originalInvoiceId: activeReturnInvoice.id,
+            date: todayStr,
+            datetime: todayStr + ' ' + timeStr,
+            items: returnItems,
+            totalReturn: totalReturnVal,
+            cashier: currentUser
+        };
+
+        returnInvoices.unshift(returnInv);
+        localStorage.setItem('cafe_returns', JSON.stringify(returnInvoices));
+
+        alert('تم تأكيد وتسجيل مرتجع الفاتورة برقم: ' + returnInv.id + ' بنجاح بقيمة ' + totalReturnVal.toFixed(2) + ' ج.م');
+        
+        document.getElementById('returnDetailsContainer').style.display = 'none';
+        document.getElementById('returnSearchText').value = '';
+        activeReturnInvoice = null;
+
+        loadReturnsHistory();
+        loadDailyReport();
+        searchInvoicesForReturnsTab();
+    }
+
+    function loadReturnsHistory() {
+        const table = document.getElementById('returnsHistoryTable');
+        if(!returnInvoices || returnInvoices.length === 0) {
+            table.innerHTML = '<thead><tr class="table-dark"><th>سجل المرتجعات</th></tr></thead><tbody><tr><td class="text-muted">لا توجد مرتجعات مسجلة</td></tr></tbody>';
+            return;
+        }
+
+        let thead = `
+            <thead>
+                <tr class="table-dark">
+                    <th>رقم المرتجع</th>
+                    <th>رقم الفاتورة الأصلية</th>
+                    <th>التاريخ والوقت</th>
+                    <th>الأصناف المرتجعة</th>
+                    <th>إجمالي المبلغ المسترد</th>
+                </tr>
+            </thead>`;
+        let tbody = '<tbody>';
+        returnInvoices.forEach(ret => {
+            let itemsSummary = ret.items.map(i => `${i.name} (${i.qty})`).join(', ');
+            tbody += `
+                <tr>
+                    <td><span class="badge bg-danger">${ret.id}</span></td>
+                    <td><strong>${ret.originalInvoiceId}</strong></td>
+                    <td><small>${ret.datetime}</small></td>
+                    <td class="text-start" style="font-size: 0.8rem;">${itemsSummary}</td>
+                    <td><strong class="text-danger">${ret.totalReturn.toFixed(2)} ج.م</strong></td>
+                </tr>`;
+        });
+        tbody += '</tbody>';
+        table.innerHTML = thead + tbody;
+    }
+
+    // --- نظام الهادر (بنفس آلية المرتجعات) ---
+    // الكميات المرتجعة + الهادرة سابقاً لكل صنف في فاتورة
+    function usedQtyMap(invId) {
+        const map = {};
+        returnInvoices.forEach(r => {
+            if(r.originalInvoiceId === invId) r.items.forEach(i => { map[i.code] = (map[i.code] || 0) + i.qty; });
+        });
+        wasteInvoices.forEach(w => {
+            if(w.originalInvoiceId === invId) w.items.forEach(i => { map[i.code] = (map[i.code] || 0) + i.qty; });
+        });
+        return map;
+    }
+
+    function searchInvoicesForWasteTab() {
+        const from = document.getElementById('wasteDateFrom').value;
+        const to = document.getElementById('wasteDateTo').value;
+        const text = document.getElementById('wasteSearchText').value.toLowerCase().trim();
+        const filtered = invoices.filter(inv => {
+            if(from && inv.date < from) return false;
+            if(to && inv.date > to) return false;
+            if(text) {
+                return inv.id.toLowerCase().includes(text) || inv.items.some(i => i.name.toLowerCase().includes(text));
+            }
+            return true;
+        });
+        const table = document.getElementById('matchingWasteTable');
+        const tb = table.querySelector('tbody');
+        if(filtered.length === 0) {
+            tb.innerHTML = '<tr><td colspan="5" class="text-muted">لا توجد فواتير مطابقة</td></tr>';
+            return;
+        }
+        tb.innerHTML = filtered.map(inv => `
+            <tr>
+                <td><strong>${escapeTopItemText(inv.id)}</strong></td>
+                <td><small>${escapeTopItemText(inv.datetime)}</small></td>
+                <td class="text-start" style="font-size: 0.8rem;">${escapeTopItemText(inv.items.map(i => `${i.name} (${i.qty})`).join(', '))}</td>
+                <td><strong class="text-success">${inv.grandTotal.toFixed(2)} ج.م</strong></td>
+                <td><button class="btn btn-sm btn-outline-secondary select-inv-waste" data-id="${escapeTopItemText(inv.id)}"><i class="fas fa-trash-alt"></i> اختر للهادر</button></td>
+            </tr>`).join('');
+        tb.querySelectorAll('.select-inv-waste').forEach(btn => {
+            btn.addEventListener('click', function() { selectInvoiceForWaste(this.getAttribute('data-id')); });
+        });
+    }
+
+    function selectInvoiceForWaste(invId) {
+        const inv = invoices.find(i => i.id === invId);
+        if(!inv) return;
+        activeWasteInvoice = inv;
+        document.getElementById('wasteInvIdDisplay').innerText = inv.id;
+        document.getElementById('wasteInvDateDisplay').innerText = inv.datetime;
+        document.getElementById('wasteSubTotalDisplay').innerText = (inv.subTotal || 0).toFixed(2);
+        document.getElementById('wasteDiscountDisplay').innerText = (inv.discountPercent || 0) + '%';
+        document.getElementById('wasteGrandTotalDisplay').innerText = (inv.grandTotal || 0).toFixed(2);
+        document.getElementById('wasteReason').value = '';
+        document.getElementById('wasteDetailsContainer').style.display = 'block';
+        renderWasteItemsTable(inv);
+        document.getElementById('wasteDetailsContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderWasteItemsTable(inv) {
+        const discPct = inv.discountPercent || 0;
+        const used = usedQtyMap(inv.id);
+        document.getElementById('wasteItemsTableBody').innerHTML = inv.items.map((item, index) => {
+            const already = used[item.code] || 0;
+            const maxQty = Math.max(0, item.qty - already);
+            const eff = item.price * (1 - discPct / 100);
+            return `
+                <tr>
+                    <td class="fw-bold text-start">${escapeTopItemText(item.name)}</td>
+                    <td>${item.price.toFixed(2)} ج.م</td>
+                    <td class="text-primary fw-semibold">${eff.toFixed(2)} ج.م</td>
+                    <td>${item.qty} ${already > 0 ? `<br><small class="text-danger fw-bold">(تم إرجاعه/هدره سابقاً: ${already})</small>` : ''}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-center waste-item-qty" data-index="${index}" value="0" min="0" max="${maxQty}" style="width: 85px; margin: auto;" oninput="calcWasteTotal()">
+                        <div class="text-muted" style="font-size: 0.7rem;">المتاح: ${maxQty}</div>
+                    </td>
+                    <td><span class="text-danger fw-bold" id="waste_row_tot_${index}">0.00</span> ج.م</td>
+                </tr>`;
+        }).join('');
+        calcWasteTotal();
+    }
+
+    function calcWasteTotal() {
+        if(!activeWasteInvoice) return;
+        const discPct = activeWasteInvoice.discountPercent || 0;
+        const used = usedQtyMap(activeWasteInvoice.id);
+        let total = 0;
+        document.querySelectorAll('.waste-item-qty').forEach(input => {
+            const idx = input.getAttribute('data-index');
+            const item = activeWasteInvoice.items[idx];
+            const maxQty = Math.max(0, item.qty - (used[item.code] || 0));
+            let q = parseInt(input.value) || 0;
+            if(q > maxQty) { q = maxQty; input.value = maxQty; }
+            if(q < 0) { q = 0; input.value = 0; }
+            const rowVal = q * item.price * (1 - discPct / 100);
+            total += rowVal;
+            document.getElementById(`waste_row_tot_${idx}`).innerText = rowVal.toFixed(2);
+        });
+        document.getElementById('wasteTotalAmount').innerText = total.toFixed(2);
+    }
+
+    function cancelWasteSelection() {
+        activeWasteInvoice = null;
+        document.getElementById('wasteItemsTableBody').innerHTML = '';
+        document.getElementById('wasteTotalAmount').innerText = '0.00';
+        document.getElementById('wasteDetailsContainer').style.display = 'none';
+    }
+
+    function confirmWaste() {
+        if(!activeWasteInvoice) return;
+        const discPct = activeWasteInvoice.discountPercent || 0;
+        const items = [];
+        let total = 0;
+        document.querySelectorAll('.waste-item-qty').forEach(input => {
+            const q = parseInt(input.value) || 0;
+            if(q > 0) {
+                const orig = activeWasteInvoice.items[input.getAttribute('data-index')];
+                const eff = orig.price * (1 - discPct / 100);
+                total += q * eff;
+                items.push({code: orig.code, name: orig.name, price: orig.price, effectivePrice: eff, qty: q, total: q * eff});
+            }
+        });
+        if(items.length === 0) { alert('يرجى تحديد كمية واحدة على الأقل لتسجيل الهادر!'); return; }
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const rec = {
+            id: 'WST-' + Math.floor(1000 + Math.random() * 9000),
+            originalInvoiceId: activeWasteInvoice.id,
+            date: todayStr,
+            datetime: todayStr + ' ' + new Date().toTimeString().slice(0, 8),
+            items: items,
+            totalWaste: total,
+            reason: document.getElementById('wasteReason').value.trim(),
+            cashier: currentUser
+        };
+        wasteInvoices.unshift(rec);
+        localStorage.setItem('cafe_waste', JSON.stringify(wasteInvoices));
+        alert('تم تسجيل الهادر برقم: ' + rec.id + ' بقيمة ' + total.toFixed(2) + ' ج.م');
+
+        cancelWasteSelection();
+        document.getElementById('wasteSearchText').value = '';
+        loadWasteHistory();
+        loadDailyReport();
+        searchInvoicesForWasteTab();
+    }
+
+    function loadWasteHistory() {
+        const table = document.getElementById('wasteHistoryTable');
+        if(!wasteInvoices || wasteInvoices.length === 0) {
+            table.innerHTML = '<thead><tr class="table-dark"><th>سجل الهادر</th></tr></thead><tbody><tr><td class="text-muted">لا يوجد هادر مسجل</td></tr></tbody>';
+            return;
+        }
+        table.innerHTML = `<thead><tr class="table-dark"><th>رقم الهادر</th><th>الفاتورة الأصلية</th><th>التاريخ والوقت</th><th>الأصناف</th><th>السبب</th><th>قيمة الهادر</th></tr></thead><tbody>` +
+            wasteInvoices.map(w => `
+                <tr>
+                    <td><span class="badge bg-secondary">${escapeTopItemText(w.id)}</span></td>
+                    <td><strong>${escapeTopItemText(w.originalInvoiceId)}</strong></td>
+                    <td><small>${escapeTopItemText(w.datetime)}</small></td>
+                    <td class="text-start" style="font-size: 0.8rem;">${escapeTopItemText(w.items.map(i => `${i.name} (${i.qty})`).join(', '))}</td>
+                    <td class="small">${escapeTopItemText(w.reason || '—')}</td>
+                    <td><strong class="text-danger">${w.totalWaste.toFixed(2)} ج.م</strong></td>
+                </tr>`).join('') + '</tbody>';
+    }
+
+    function loadInvoices() {
+        searchInvoices();
+    }
+
+    function searchInvoices() {
+        let viewMode = document.getElementById('viewMode').value;
+        let dateFrom = document.getElementById('filterDateFrom').value;
+        let dateTo = document.getElementById('filterDateTo').value;
+        let searchText = document.getElementById('filterSearchText').value.toLowerCase().trim();
+
+        let filtered = invoices.filter(inv => {
+            let matchDate = true;
+            if(dateFrom && inv.date < dateFrom) matchDate = false;
+            if(dateTo && inv.date > dateTo) matchDate = false;
+
+            let matchText = true;
+            if(searchText) {
+                let matchId = inv.id.toLowerCase().includes(searchText);
+                let matchItem = inv.items.some(i => i.name.toLowerCase().includes(searchText));
+                matchText = matchId || matchItem;
+            }
+
+            return matchDate && matchText;
+        });
+
+        renderInvoicesTable(filtered, viewMode);
+    }
+
+    function renderInvoicesTable(list, mode) {
+        const table = document.getElementById('invoicesTable');
+        if(list.length === 0) {
+            table.innerHTML = '<thead><tr class="table-dark"><th>تنبيه</th></tr></thead><tbody><tr><td class="text-muted">لا توجد فواتير مطابقة</td></tr></tbody>';
+            return;
+        }
+
+        let canEdit = (currentUser === 'admin' || permissions.cashier_edit);
+
+        if(mode === 'summary') {
+            let thead = `
+                <thead>
+                    <tr class="table-dark">
+                        <th>رقم الفاتورة</th>
+                        <th>التاريخ والوقت</th>
+                        <th>الأصناف باختصار</th>
+                        <th>المبلغ الفرعي</th>
+                        <th>الخصم</th>
+                        <th>الإجمالي</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>`;
+            let tbody = '<tbody>';
+            list.forEach(inv => {
+                let itemsSummary = inv.items.map(i => `${i.name} (${i.qty})`).join(', ');
+                let discAmt = inv.discountAmount !== undefined ? inv.discountAmount : ((inv.subTotal * (inv.discountPercent || 0)) / 100);
+                tbody += `
+                    <tr>
+                        <td><strong>${inv.id}</strong></td>
+                        <td><small>${inv.datetime}</small></td>
+                        <td class="text-start" style="font-size: 0.8rem;">${itemsSummary}</td>
+                        <td>${inv.subTotal.toFixed(2)}</td>
+                        <td>${inv.discountPercent || 0}% (${discAmt.toFixed(2)})</td>
+                        <td><strong class="text-success">${inv.grandTotal.toFixed(2)}</strong></td>
+                        <td>
+                            ${canEdit ? `
+                                <button class="btn btn-sm btn-outline-primary py-0 px-1 inv-edit" data-id="${inv.id}" title="تعديل"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-outline-danger py-0 px-1 inv-del" data-id="${inv.id}" title="إلغاء وحذف"><i class="fas fa-trash"></i></button>
+                            ` : '<span class="text-muted small">غير متاح</span>'}
+                        </td>
+                    </tr>`;
+            });
+            tbody += '</tbody>';
+            table.innerHTML = thead + tbody;
+
+        } else {
+            let thead = `
+                <thead>
+                    <tr class="table-dark">
+                        <th>رقم الفاتورة</th>
+                        <th>التاريخ والوقت</th>
+                        <th>اسم الصنف</th>
+                        <th>الكمية</th>
+                        <th>السعر</th>
+                        <th>إجمالي الصنف</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>`;
+            let tbody = '<tbody>';
+            list.forEach(inv => {
+                inv.items.forEach(item => {
+                    let itemTotal = item.qty * item.price;
+                    tbody += `
+                        <tr>
+                            <td><span class="badge bg-secondary">${inv.id}</span></td>
+                            <td><small>${inv.datetime}</small></td>
+                            <td class="fw-bold text-start">${item.name}</td>
+                            <td>${item.qty}</td>
+                            <td>${item.price}</td>
+                            <td class="text-success">${itemTotal.toFixed(2)}</td>
+                            <td>
+                                ${canEdit ? `
+                                    <button class="btn btn-sm btn-outline-primary py-0 px-1 inv-edit" data-id="${inv.id}" title="تعديل"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger py-0 px-1 inv-del" data-id="${inv.id}" title="إلغاء وحذف"><i class="fas fa-trash"></i></button>
+                                ` : '<span class="text-muted small">غير متاح</span>'}
+                            </td>
+                        </tr>`;
+                });
+            });
+            tbody += '</tbody>';
+            table.innerHTML = thead + tbody;
+        }
+
+        table.querySelectorAll('.inv-edit').forEach(b => b.addEventListener('click', () => openMultiRowEditModal(b.getAttribute('data-id'))));
+        table.querySelectorAll('.inv-del').forEach(b => b.addEventListener('click', () => cancelInvoice(b.getAttribute('data-id'))));
+    }
+
+    function cancelInvoice(id) {
+        if(currentUser !== 'admin' && !permissions.cashier_edit) {
+            alert('عفواً، لا توجد صلاحية لإلغاء الفواتير!');
+            return;
+        }
+        if(confirm('هل أنت متأكد من إلغاء وحذف هذه الفاتورة بالكامل؟')) {
+            invoices = invoices.filter(i => i.id !== id);
+            localStorage.setItem('cafe_invoices', JSON.stringify(invoices));
+            searchInvoices();
+            loadDailyReport();
+            searchInvoicesForReturnsTab();
+        }
+    }
+
+    function openMultiRowEditModal(id) {
+        if(currentUser !== 'admin' && !permissions.cashier_edit) {
+            alert('عفواً، لا توجد صلاحية لتعديل الفواتير!');
+            return;
+        }
+        let inv = invoices.find(i => i.id === id);
+        if(!inv) return;
+
+        document.getElementById('editInvId').value = inv.id;
+        document.getElementById('editInvDiscount').value = inv.discountPercent || 0;
+
+        let tbody = '';
+        inv.items.forEach((item, index) => {
+            let itemTot = item.qty * item.price;
+            tbody += `
+                <tr>
+                    <td class="fw-bold text-start">${item.name}</td>
+                    <td>${item.price}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-center edit-item-qty" data-index="${index}" value="${item.qty}" min="1" style="width: 70px; margin: auto;">
+                    </td>
+                    <td><span class="edit-item-total" id="edit_tot_${index}">${itemTot.toFixed(2)}</span> ج.م</td>
+                </tr>`;
+        });
+        document.getElementById('editInvoiceItemsTable').innerHTML = tbody;
+
+        document.querySelectorAll('.edit-item-qty').forEach(inp => {
+            inp.addEventListener('input', recalcEditModalTotal);
+        });
+        const discInp = document.getElementById('editInvDiscount');
+        discInp.removeEventListener('input', recalcEditModalTotal);
+        discInp.addEventListener('input', recalcEditModalTotal);
+
+        var myModal = new bootstrap.Modal(document.getElementById('editInvoiceModal'));
+        myModal.show();
+    }
+
+    function recalcEditModalTotal() {
+        let invId = document.getElementById('editInvId').value;
+        let inv = invoices.find(i => i.id === invId);
+        if(!inv) return;
+
+        let qtyInputs = document.querySelectorAll('.edit-item-qty');
+        qtyInputs.forEach(input => {
+            let idx = input.getAttribute('data-index');
+            let newQty = parseInt(input.value) || 0;
+            inv.items[idx].qty = newQty;
+            inv.items[idx].total = newQty * inv.items[idx].price;
+            let el = document.getElementById(`edit_tot_${idx}`);
+            if(el) el.innerText = inv.items[idx].total.toFixed(2);
+        });
+    }
+
+    function saveMultiRowEditedInvoice() {
+        let invId = document.getElementById('editInvId').value;
+        let inv = invoices.find(i => i.id === invId);
+        if(!inv) return;
+
+        let subTotal = inv.items.reduce((sum, i) => sum + (i.qty * i.price), 0);
+        let discountPercent = parseFloat(document.getElementById('editInvDiscount').value) || 0;
+        let discountAmount = (subTotal * discountPercent) / 100;
+        let grandTotal = subTotal - discountAmount;
+
+        inv.subTotal = subTotal;
+        inv.discountPercent = discountPercent;
+        inv.discountAmount = discountAmount;
+        inv.grandTotal = grandTotal;
+
+        localStorage.setItem('cafe_invoices', JSON.stringify(invoices));
+        searchInvoices();
+        loadDailyReport();
+        searchInvoicesForReturnsTab();
+
+        var modalEl = document.getElementById('editInvoiceModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        alert('تم تعديل الفاتورة وتحديث كل صنف في صفوفه بنجاح!');
+    }
+
+    let topItemsReportData = [];
+    let topItemsReportTotals = { qty: 0, revenue: 0, sold: 0, returned: 0 };
+
+    function escapeTopItemText(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
+    function loadTopItemsReport() {
+        const today = new Date();
+        const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+        const fromEl = document.getElementById('topItemsDateFrom');
+        const toEl = document.getElementById('topItemsDateTo');
+        const fromDate = fromEl.value || localToday.slice(0, 8) + '01';
+        const toDate = toEl.value || localToday;
+        if (fromDate > toDate) { alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية أو مساويًا له.'); return; }
+        fromEl.value = fromDate;
+        toEl.value = toDate;
+        document.getElementById('topItemsPeriodLabel').innerText = fromDate === toDate ? fromDate : fromDate + ' إلى ' + toDate;
+
+        const invoicePeriod = invoices.filter(inv => inv.date >= fromDate && inv.date <= toDate);
+        const returnPeriod = returnInvoices.filter(ret => ret.date >= fromDate && ret.date <= toDate);
+        const itemMap = new Map();
+        const getRow = item => {
+            const name = String(item.name || '').trim();
+            const code = String(item.code || '').trim();
+            if (!name) return null;
+            const key = code ? 'code:' + code : 'name:' + name.toLocaleLowerCase();
+            if (!itemMap.has(key)) itemMap.set(key, { key, name, code, sold: 0, returned: 0, wasted: 0, wasteValue: 0, gross: 0, discount: 0, returnValue: 0, invoiceIds: new Set() });
+            const row = itemMap.get(key);
+            if (!row.code && code) row.code = code;
+            return row;
+        };
+
+        invoicePeriod.forEach(inv => {
+            const discPct = Number(inv.discountPercent) || 0;
+            const items = Array.isArray(inv.items) ? inv.items : [];
+            const subTotal = Number(inv.subTotal) || items.reduce((sum, it) => sum + (Number(it.total) || (Number(it.qty) || 0) * (Number(it.price) || 0)), 0);
+            const invoiceDiscount = inv.discountAmount !== undefined && inv.discountAmount !== null
+                ? (Number(inv.discountAmount) || 0) : subTotal * discPct / 100;
+            items.forEach(item => {
+                const row = getRow(item); if (!row) return;
+                const qty = Number(item.qty) || 0;
+                const lineGross = Number(item.total) || qty * (Number(item.price) || 0);
+                const lineDiscount = subTotal > 0 ? invoiceDiscount * lineGross / subTotal : lineGross * discPct / 100;
+                row.sold += qty;
+                row.gross += lineGross;
+                row.discount += lineDiscount;
+                if (inv.id) row.invoiceIds.add(inv.id);
+            });
+        });
+
+        returnPeriod.forEach(ret => {
+            (Array.isArray(ret.items) ? ret.items : []).forEach(item => {
+                const row = getRow(item); if (!row) return;
+                row.returned += Number(item.qty) || 0;
+                row.returnValue += Number(item.total) || (Number(item.qty) || 0) * (Number(item.effectivePrice || item.price) || 0);
+            });
+        });
+
+        wasteInvoices.filter(w => w.date >= fromDate && w.date <= toDate).forEach(w => {
+            (Array.isArray(w.items) ? w.items : []).forEach(item => {
+                const row = getRow(item); if (!row) return;
+                row.wasted += Number(item.qty) || 0;
+                row.wasteValue += Number(item.total) || (Number(item.qty) || 0) * (Number(item.effectivePrice || item.price) || 0);
+            });
+        });
+
+        topItemsReportData = Array.from(itemMap.values()).map(row => ({
+            ...row,
+            netQty: row.sold - row.returned - row.wasted,
+            netRevenue: row.gross - row.discount - row.returnValue - row.wasteValue,
+            invoiceCount: row.invoiceIds.size
+        })).filter(row => row.sold !== 0 || row.returned !== 0 || row.wasted !== 0);
+        topItemsReportTotals = topItemsReportData.reduce((tot, row) => ({
+            qty: tot.qty + row.netQty, revenue: tot.revenue + row.netRevenue,
+            sold: tot.sold + row.sold, returned: tot.returned + row.returned
+        }), { qty: 0, revenue: 0, sold: 0, returned: 0 });
+        renderTopItemsReport();
+    }
+
+    function renderTopItemsReport() {
+        const search = (document.getElementById('topItemsSearch').value || '').trim().toLocaleLowerCase();
+        const sortBy = document.getElementById('topItemsSort').value;
+        const limitValue = document.getElementById('topItemsLimit').value;
+        let rows = topItemsReportData.filter(row => !search || row.name.toLocaleLowerCase().includes(search) || row.code.toLocaleLowerCase().includes(search));
+        rows.sort((a, b) => sortBy === 'revenue' ? b.netRevenue - a.netRevenue : b.netQty - a.netQty);
+        const totalQty = topItemsReportTotals.qty;
+        const totalRevenue = topItemsReportTotals.revenue;
+        const best = rows[0];
+        document.getElementById('topItemsTotalQty').innerText = Number(totalQty.toFixed(2)).toLocaleString('en-US');
+        document.getElementById('topItemsTotalRevenue').innerText = totalRevenue.toFixed(2) + ' ج.م';
+        document.getElementById('topItemsCount').innerText = topItemsReportData.filter(r => r.netQty > 0 || r.netRevenue > 0).length;
+        document.getElementById('topItemsBestName').innerText = best ? best.name : '—';
+        document.getElementById('topItemsBestQty').innerText = best ? Number(best.netQty.toFixed(2)).toLocaleString('en-US') + ' وحدة صافي' : '0 وحدة';
+
+        const visibleRows = limitValue === 'all' ? rows : rows.slice(0, Number(limitValue));
+        const tbody = document.getElementById('topItemsTableBody');
+        if (!visibleRows.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-muted py-4">لا توجد أصناف مطابقة خلال الفترة المحددة</td></tr>';
+        } else {
+            tbody.innerHTML = visibleRows.map((row, index) => {
+                const contribution = totalRevenue > 0 ? Math.max(0, row.netRevenue) / totalRevenue * 100 : 0;
+                const rank = index + 1;
+                const rankClass = rank === 1 ? 'bg-warning text-dark' : (rank <= 3 ? 'bg-primary' : 'bg-secondary');
+                return `<tr>
+                    <td><span class="badge ${rankClass} rounded-pill px-2">${rank}</span></td>
+                    <td class="text-start fw-bold">${escapeTopItemText(row.name)}</td>
+                    <td class="text-muted">${escapeTopItemText(row.code || '—')}</td>
+                    <td>${Number(row.sold.toFixed(2)).toLocaleString('en-US')}</td>
+                    <td class="text-danger">${Number(row.returned.toFixed(2)).toLocaleString('en-US')}</td>
+                    <td class="text-danger">${Number(row.wasted.toFixed(2)).toLocaleString('en-US')}</td>
+                    <td class="fw-bold ${row.netQty < 0 ? 'text-danger' : 'text-primary'}">${Number(row.netQty.toFixed(2)).toLocaleString('en-US')}</td>
+                    <td class="fw-bold ${row.netRevenue < 0 ? 'text-danger' : 'text-success'}">${row.netRevenue.toFixed(2)} ج.م</td>
+                    <td><div class="d-flex align-items-center gap-2"><div class="progress flex-grow-1" style="height:7px;min-width:45px"><div class="progress-bar" role="progressbar" style="width:${Math.min(100, contribution)}%"></div></div><small>${contribution.toFixed(1)}%</small></div></td>
+                </tr>`;
+            }).join('');
+        }
+        document.getElementById('topItemsResultCount').innerText = `عرض ${visibleRows.length} من ${rows.length} صنف مطابق — إجمالي الأصناف في الفترة: ${topItemsReportData.length}`;
+
+        const chartRows = rows.slice(0, 5);
+        const chart = document.getElementById('topItemsChart');
+        if (!chartRows.length) chart.innerHTML = '<div class="text-muted small text-center py-4">لا توجد بيانات كافية للرسم</div>';
+        else {
+            const maxValue = Math.max(1, ...chartRows.map(r => Math.max(0, sortBy === 'revenue' ? r.netRevenue : r.netQty)));
+            chart.innerHTML = chartRows.map((row, i) => {
+                const value = sortBy === 'revenue' ? row.netRevenue : row.netQty;
+                const width = Math.max(0, value) / maxValue * 100;
+                return `<div class="mb-3"><div class="d-flex justify-content-between gap-2 small mb-1"><span class="text-truncate fw-bold">${i + 1}. ${escapeTopItemText(row.name)}</span><span class="text-nowrap">${sortBy === 'revenue' ? value.toFixed(2) + ' ج.م' : Number(value.toFixed(2)).toLocaleString('en-US')}</span></div><div class="progress" style="height:12px"><div class="progress-bar ${i === 0 ? 'bg-warning' : 'bg-primary'}" style="width:${width}%"></div></div></div>`;
+            }).join('');
+        }
+    }
+
+    function exportTopItemsReport() {
+        if (!topItemsReportData.length) { alert('لا توجد بيانات لتصديرها. اعرض التقرير أولاً.'); return; }
+        const sortBy = document.getElementById('topItemsSort').value;
+        const search = (document.getElementById('topItemsSearch').value || '').trim().toLocaleLowerCase();
+        const rows = topItemsReportData.filter(row => !search || row.name.toLocaleLowerCase().includes(search) || row.code.toLocaleLowerCase().includes(search));
+        rows.sort((a, b) => sortBy === 'revenue' ? b.netRevenue - a.netRevenue : b.netQty - a.netQty);
+        const csvRows = [['الترتيب','اسم الصنف','كود الصنف','كمية البيع','الكمية المرتجعة','الكمية الهادرة','صافي الكمية','صافي المبيعات','عدد الفواتير']];
+        rows.forEach((r, i) => csvRows.push([i + 1, r.name, r.code, r.sold, r.returned, r.wasted, r.netQty, r.netRevenue.toFixed(2), r.invoiceCount]));
+        const csv = '\uFEFF' + csvRows.map(row => row.map(value => '"' + String(value == null ? '' : value).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'تقرير_الأصناف_الأكثر_مبيعاً.csv';
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // تصدير تقرير اليوم إلى Excel: كل صنف في سطر مع المبيعات والمرتجع والهادر والسعر والخصم والصافي
+    function exportDailyReportExcel() {
+        if (typeof XLSX === 'undefined') {
+            alert('مكتبة Excel غير محملة، تأكد من الاتصال بالإنترنت ثم حدّث الصفحة.');
+            return;
+        }
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const fromDate = document.getElementById('dailyDateFrom').value || todayStr;
+        const toDate = document.getElementById('dailyDateTo').value || todayStr;
+        if (fromDate > toDate) { alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية أو مساويًا له.'); return; }
+
+        const pInv = invoices.filter(i => i.date >= fromDate && i.date <= toDate);
+        const pRet = returnInvoices.filter(r => r.date >= fromDate && r.date <= toDate);
+        const pWst = wasteInvoices.filter(w => w.date >= fromDate && w.date <= toDate);
+
+        const map = {};
+        const getRow = (date, name) => {
+            const k = date + '||' + name;
+            if (!map[k]) map[k] = {date: date, name: name, sold: 0, gross: 0, discount: 0, retQty: 0, retVal: 0, wasteQty: 0, wasteVal: 0};
+            return map[k];
+        };
+
+        pInv.forEach(inv => {
+            const items = inv.items || [];
+            const discPct = Number(inv.discountPercent) || 0;
+            const lineGross = it => (Number(it.qty) || 0) * (Number(it.price) || 0);
+            const subTotal = items.reduce((s, it) => s + lineGross(it), 0);
+            const invDisc = (inv.discountAmount !== undefined && inv.discountAmount !== null)
+                ? (Number(inv.discountAmount) || 0) : subTotal * discPct / 100;
+            items.forEach(it => {
+                const name = String(it.name || '').trim();
+                if (!name) return;
+                const row = getRow(inv.date, name);
+                const g = lineGross(it);
+                row.sold += Number(it.qty) || 0;
+                row.gross += g;
+                row.discount += subTotal > 0 ? invDisc * g / subTotal : 0;
+            });
+        });
+        pRet.forEach(r => (r.items || []).forEach(it => {
+            const name = String(it.name || '').trim();
+            if (!name) return;
+            const row = getRow(r.date, name);
+            row.retQty += Number(it.qty) || 0;
+            row.retVal += Number(it.total) || 0;
+        }));
+        pWst.forEach(w => (w.items || []).forEach(it => {
+            const name = String(it.name || '').trim();
+            if (!name) return;
+            const row = getRow(w.date, name);
+            row.wasteQty += Number(it.qty) || 0;
+            row.wasteVal += Number(it.total) || 0;
+        }));
+
+        const list = Object.keys(map).map(k => {
+            const r = map[k];
+            return Object.assign({}, r, {
+                netQty: r.sold - r.retQty - r.wasteQty,
+                net: r.gross - r.discount - r.retVal - r.wasteVal
+            });
+        }).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name, 'ar'));
+
+        if (list.length === 0) { alert('لا توجد بيانات خلال الفترة المحددة لتصديرها.'); return; }
+
+        const r2 = v => Math.round(v * 100) / 100;
+        const header = ['تاريخ البيع', 'اسم الصنف', 'الكمية المباعة', 'سعر البيع', 'إجمالي المبيعات', 'الخصم', 'كمية المرتجع', 'قيمة المرتجع', 'كمية الهادر', 'قيمة الهادر', 'صافي الكمية', 'صافي المبيعات'];
+        const rows = list.map(r => [r.date, r.name, r.sold, r.sold ? r2(r.gross / r.sold) : '', r2(r.gross), r2(r.discount), r.retQty, r2(r.retVal), r.wasteQty, r2(r.wasteVal), r.netQty, r2(r.net)]);
+        const sum = k => list.reduce((s, r) => s + r[k], 0);
+        rows.push(['', 'الإجمالي', sum('sold'), '', r2(sum('gross')), r2(sum('discount')), sum('retQty'), r2(sum('retVal')), sum('wasteQty'), r2(sum('wasteVal')), sum('netQty'), r2(sum('net'))]);
+
+        const periodLabel = fromDate === toDate ? fromDate : fromDate + ' إلى ' + toDate;
+        const totalSales = pInv.reduce((s, i) => s + (Number(i.subTotal) || 0), 0);
+        const totalDisc = pInv.reduce((s, i) => s + (i.discountAmount !== undefined && i.discountAmount !== null ? Number(i.discountAmount) || 0 : (Number(i.subTotal) || 0) * (Number(i.discountPercent) || 0) / 100), 0);
+        const afterDisc = pInv.reduce((s, i) => s + (Number(i.grandTotal) || 0), 0);
+        const totalRet = pRet.reduce((s, r) => s + (Number(r.totalReturn) || 0), 0);
+        const totalWst = pWst.reduce((s, w) => s + (Number(w.totalWaste) || 0), 0);
+        const summary = [
+            ['البند', 'القيمة'],
+            ['النشاط', businessName],
+            ['الفترة', periodLabel],
+            ['عدد الفواتير', pInv.length],
+            ['إجمالي المبيعات قبل الخصم', r2(totalSales)],
+            ['إجمالي الخصومات', r2(totalDisc)],
+            ['المبيعات بعد الخصم', r2(afterDisc)],
+            ['إجمالي المرتجعات', r2(totalRet)],
+            ['إجمالي الهادر', r2(totalWst)],
+            ['صافي المبيعات', r2(afterDisc - totalRet - totalWst)]
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet([header].concat(rows));
+        ws['!cols'] = [{wch: 13}, {wch: 26}, {wch: 14}, {wch: 12}, {wch: 16}, {wch: 12}, {wch: 14}, {wch: 14}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 16}];
+        const ws2 = XLSX.utils.aoa_to_sheet(summary);
+        ws2['!cols'] = [{wch: 30}, {wch: 26}];
+        const wb = XLSX.utils.book_new();
+        wb.Workbook = {Views: [{RTL: true}]};
+        XLSX.utils.book_append_sheet(wb, ws, 'المبيعات بالأصناف');
+        XLSX.utils.book_append_sheet(wb, ws2, 'ملخص');
+        XLSX.writeFile(wb, 'daily_report_' + periodLabel.replace(/\s+/g, '_') + '.xlsx');
+    }
+
+    // تصدير تقرير اليوم إلى PDF (يدعم العربية عبر التقاط صورة من تقرير نظيف)
+    function exportDailyReportPdf() {
+        if (!window.jspdf || typeof html2canvas === 'undefined') {
+            alert('مكتبات التصدير غير محملة، تأكد من الاتصال بالإنترنت ثم حدّث الصفحة.');
+            return;
+        }
+        loadDailyReport();
+        const esc = escapeTopItemText;
+        const val = id => document.getElementById(id).innerText;
+        const rows = Array.from(document.querySelectorAll('#dailyItemsTableBody tr')).map(tr =>
+            Array.from(tr.children).map(td => td.innerText.trim()));
+        const hasData = rows.length && rows[0].length === 4;
+        const itemsHtml = hasData
+            ? rows.map(r => `<tr><td style="padding:6px;border:1px solid #ccc;text-align:center">${esc(r[0])}</td><td style="padding:6px;border:1px solid #ccc;text-align:right">${esc(r[1])}</td><td style="padding:6px;border:1px solid #ccc;text-align:center">${esc(r[2])}</td><td style="padding:6px;border:1px solid #ccc;text-align:center">${esc(r[3])}</td></tr>`).join('')
+            : `<tr><td colspan="4" style="padding:10px;border:1px solid #ccc;text-align:center;color:#777">لا توجد مبيعات أو مرتجعات خلال الفترة المحددة</td></tr>`;
+        const retRows = Array.from(document.querySelectorAll('#dailyReturnsTableBody tr')).map(tr =>
+            Array.from(tr.children).map(td => td.innerText.trim()));
+        const retHtml = (retRows.length && retRows[0].length === 3)
+            ? retRows.map(r => `<tr><td style="padding:6px;border:1px solid #ccc;text-align:right">${esc(r[0])}</td><td style="padding:6px;border:1px solid #ccc;text-align:center">${esc(r[1])}</td><td style="padding:6px;border:1px solid #ccc;text-align:center">${esc(r[2])}</td></tr>`).join('')
+            : `<tr><td colspan="3" style="padding:10px;border:1px solid #ccc;text-align:center;color:#777">لا توجد مرتجعات خلال الفترة</td></tr>`;
+        const wasteRows = Array.from(document.querySelectorAll('#dailyWasteTableBody tr')).map(tr =>
+            Array.from(tr.children).map(td => td.innerText.trim()));
+        const wasteHtml = (wasteRows.length && wasteRows[0].length === 3)
+            ? wasteRows.map(r => `<tr><td style="padding:6px;border:1px solid #ccc;text-align:right">${esc(r[0])}</td><td style="padding:6px;border:1px solid #ccc;text-align:center">${esc(r[1])}</td><td style="padding:6px;border:1px solid #ccc;text-align:center">${esc(r[2])}</td></tr>`).join('')
+            : `<tr><td colspan="3" style="padding:10px;border:1px solid #ccc;text-align:center;color:#777">لا يوجد هادر خلال الفترة</td></tr>`;
+        const box = (label, v, color) => `<div style="flex:1;min-width:120px;border:1px solid #ddd;border-top:4px solid ${color};border-radius:6px;padding:8px;text-align:center"><div style="font-size:12px;color:#666">${label}</div><div style="font-size:16px;font-weight:bold;margin-top:4px">${esc(v)}</div></div>`;
+
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;padding:30px;font-family:Tahoma,sans-serif;direction:rtl;text-align:right;color:#222;box-sizing:border-box';
+        wrap.innerHTML = `
+            <div style="text-align:center;margin-bottom:14px">
+                <h2 style="margin:0;color:#0d6efd">${esc(businessName)}</h2>
+                <h4 style="margin:6px 0 2px">تقرير أعمال اليوم</h4>
+                <div style="font-size:13px;color:#666">الفترة: ${esc(val('reportDateDisplay'))}</div>
+                <div style="font-size:11px;color:#999">تاريخ الطباعة: ${esc(new Date().toLocaleString('ar-EG'))}</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+                ${box('عدد الفواتير', val('repInvoiceCount'), '#0d6efd')}
+                ${box('المبيعات قبل الخصم', val('repTotalSales'), '#198754')}
+                ${box('إجمالي الخصومات', val('repTotalDiscount'), '#ffc107')}
+                ${box('إجمالي المرتجعات', val('repTotalReturns'), '#dc3545')}
+                ${box('صافي المبيعات', val('repNetSales'), '#0dcaf0')}
+                ${box('إجمالي الهادر', val('repTotalWaste'), '#6c757d')}
+            </div>
+            <h5 style="border-bottom:2px solid #ddd;padding-bottom:6px">تفاصيل مبيعات الأصناف (صافي بعد المرتجعات والهادر)</h5>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr style="background:#f1f3f5">
+                    <th style="padding:6px;border:1px solid #ccc">تاريخ البيع</th>
+                    <th style="padding:6px;border:1px solid #ccc">اسم الصنف</th>
+                    <th style="padding:6px;border:1px solid #ccc">الكمية (صافي)</th>
+                    <th style="padding:6px;border:1px solid #ccc">إجمالي المبيعات (صافي)</th>
+                </tr></thead>
+                <tbody>${itemsHtml}</tbody>
+            </table>
+            <h5 style="border-bottom:2px solid #ddd;padding-bottom:6px;margin-top:20px">الأصناف المرتجعة خلال الفترة</h5>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr style="background:#f1f3f5">
+                    <th style="padding:6px;border:1px solid #ccc">اسم الصنف</th>
+                    <th style="padding:6px;border:1px solid #ccc">الكمية المرتجعة</th>
+                    <th style="padding:6px;border:1px solid #ccc">قيمة المرتجع</th>
+                </tr></thead>
+                <tbody>${retHtml}</tbody>
+            </table>
+            <h5 style="border-bottom:2px solid #ddd;padding-bottom:6px;margin-top:20px">الأصناف الهادرة خلال الفترة</h5>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr style="background:#f1f3f5">
+                    <th style="padding:6px;border:1px solid #ccc">اسم الصنف</th>
+                    <th style="padding:6px;border:1px solid #ccc">الكمية الهادرة</th>
+                    <th style="padding:6px;border:1px solid #ccc">قيمة الهادر</th>
+                </tr></thead>
+                <tbody>${wasteHtml}</tbody>
+            </table>`;
+        document.body.appendChild(wrap);
+
+        html2canvas(wrap, {scale: 2, backgroundColor: '#ffffff'}).then(canvas => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            const imgH = canvas.height * pageW / canvas.width;
+            const img = canvas.toDataURL('image/png');
+            let pos = 0, left = imgH;
+            pdf.addImage(img, 'PNG', 0, pos, pageW, imgH);
+            left -= pageH;
+            while (left > 0) {
+                pos -= pageH;
+                pdf.addPage();
+                pdf.addImage(img, 'PNG', 0, pos, pageW, imgH);
+                left -= pageH;
+            }
+            const period = val('reportDateDisplay').replace(/\s+/g, '_');
+            pdf.save('daily_report_' + period + '.pdf');
+        }).catch(() => alert('تعذر إنشاء ملف PDF'))
+          .finally(() => wrap.remove());
+    }
+
+    function loadDailyReport() {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const fromInput = document.getElementById('dailyDateFrom');
+        const toInput = document.getElementById('dailyDateTo');
+        const fromDate = (fromInput && fromInput.value) || todayStr;
+        const toDate = (toInput && toInput.value) || todayStr;
+
+        if (fromDate > toDate) {
+            alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية أو مساويًا له.');
+            return;
+        }
+
+        const periodLabel = fromDate === toDate ? fromDate : (fromDate + ' إلى ' + toDate);
+        document.getElementById('reportDateDisplay').innerText = periodLabel;
+
+        const periodInvoices = invoices.filter(inv => inv.date >= fromDate && inv.date <= toDate);
+        const invoiceCount = periodInvoices.length;
+        const totalSales = periodInvoices.reduce((sum, inv) => sum + (Number(inv.subTotal) || 0), 0);
+        const totalDiscount = periodInvoices.reduce((sum, inv) => {
+            const amount = inv.discountAmount !== undefined && inv.discountAmount !== null
+                ? Number(inv.discountAmount) || 0
+                : ((Number(inv.subTotal) || 0) * (Number(inv.discountPercent) || 0) / 100);
+            return sum + amount;
+        }, 0);
+        const salesAfterDiscount = periodInvoices.reduce((sum, inv) => {
+            if (inv.grandTotal !== undefined && inv.grandTotal !== null) return sum + (Number(inv.grandTotal) || 0);
+            return sum + (Number(inv.subTotal) || 0) - ((Number(inv.subTotal) || 0) * (Number(inv.discountPercent) || 0) / 100);
+        }, 0);
+
+        const periodReturns = returnInvoices.filter(ret => ret.date >= fromDate && ret.date <= toDate);
+        const totalReturns = periodReturns.reduce((sum, ret) => sum + (Number(ret.totalReturn) || 0), 0);
+        // الهادر خلال الفترة (يُخصم من صافي المبيعات)
+        const periodWaste = wasteInvoices.filter(w => w.date >= fromDate && w.date <= toDate);
+        const totalWaste = periodWaste.reduce((sum, w) => sum + (Number(w.totalWaste) || 0), 0);
+        const netSales = salesAfterDiscount - totalReturns - totalWaste;
+
+        document.getElementById('repTotalWaste').innerText = totalWaste.toFixed(2) + ' ج.م';
+        const wasteMap = {};
+        periodWaste.forEach(w => (w.items || []).forEach(i => {
+            const n = String(i.name || '').trim();
+            if(!n) return;
+            if(!wasteMap[n]) wasteMap[n] = {qty: 0, total: 0};
+            wasteMap[n].qty += Number(i.qty) || 0;
+            wasteMap[n].total += Number(i.total) || 0;
+        }));
+        const wasteKeys = Object.keys(wasteMap).sort((a, b) => a.localeCompare(b, 'ar'));
+        document.getElementById('dailyWasteTableBody').innerHTML = wasteKeys.length === 0
+            ? '<tr><td colspan="3" class="text-muted">لا يوجد هادر خلال الفترة</td></tr>'
+            : wasteKeys.map(n => `<tr><td class="text-start fw-bold">${escapeTopItemText(n)}</td><td>${wasteMap[n].qty}</td><td class="text-danger">${wasteMap[n].total.toFixed(2)} ج.م</td></tr>`).join('');
+
+        document.getElementById('repInvoiceCount').innerText = invoiceCount;
+        document.getElementById('repTotalSales').innerText = totalSales.toFixed(2) + ' ج.م';
+        document.getElementById('repTotalDiscount').innerText = totalDiscount.toFixed(2) + ' ج.م';
+        document.getElementById('repTotalReturns').innerText = totalReturns.toFixed(2) + ' ج.م';
+        document.getElementById('repNetSales').innerText = netSales.toFixed(2) + ' ج.م';
+
+        // تجميع الأصناف حسب تاريخ البيع + الصنف (المرتجع والهادر يُخصمان في تاريخ تسجيلهما)
+        const itemMap = {};
+        const addRow = (date, name, qty, total) => {
+            const clean = String(name || '').trim();
+            if (!clean) return;
+            const key = date + '||' + clean;
+            if (!itemMap[key]) itemMap[key] = { date: date, name: clean, qty: 0, total: 0 };
+            itemMap[key].qty += qty;
+            itemMap[key].total += total;
+        };
+        periodInvoices.forEach(inv => {
+            const discPct = Number(inv.discountPercent) || 0;
+            (inv.items || []).forEach(item => {
+                const qty = Number(item.qty) || 0;
+                const effectivePrice = Number(item.price) * (1 - discPct / 100);
+                addRow(inv.date, item.name, qty, qty * (Number.isFinite(effectivePrice) ? effectivePrice : 0));
+            });
+        });
+        periodReturns.forEach(ret => {
+            (ret.items || []).forEach(item => addRow(ret.date, item.name, -(Number(item.qty) || 0), -(Number(item.total) || 0)));
+        });
+        periodWaste.forEach(w => {
+            (w.items || []).forEach(item => addRow(w.date, item.name, -(Number(item.qty) || 0), -(Number(item.total) || 0)));
+        });
+
+        let tbody = '';
+        const keys = Object.keys(itemMap).filter(k => itemMap[k].qty !== 0 || itemMap[k].total !== 0);
+        if (keys.length === 0) {
+            tbody = '<tr><td colspan="4" class="text-muted">لا توجد مبيعات أو مرتجعات خلال الفترة المحددة</td></tr>';
+        } else {
+            keys.sort((a, b) => itemMap[b].date.localeCompare(itemMap[a].date) || itemMap[a].name.localeCompare(itemMap[b].name, 'ar'));
+            keys.forEach(k => {
+                const row = itemMap[k];
+                tbody += `<tr>
+                    <td><small>${escapeTopItemText(row.date)}</small></td>
+                    <td class="text-start fw-bold">${escapeTopItemText(row.name)}</td>
+                    <td class="${row.qty < 0 ? 'text-danger' : ''}">${row.qty}</td>
+                    <td class="${row.total < 0 ? 'text-danger' : 'text-success'}">${row.total.toFixed(2)} ج.م</td>
+                </tr>`;
+            });
+        }
+        document.getElementById('dailyItemsTableBody').innerHTML = tbody;
+
+        // الأصناف المرتجعة خلال الفترة
+        const retMap = {};
+        periodReturns.forEach(ret => (ret.items || []).forEach(i => {
+            const n = String(i.name || '').trim();
+            if(!n) return;
+            if(!retMap[n]) retMap[n] = {qty: 0, total: 0};
+            retMap[n].qty += Number(i.qty) || 0;
+            retMap[n].total += Number(i.total) || 0;
+        }));
+        const retKeys = Object.keys(retMap).sort((a, b) => a.localeCompare(b, 'ar'));
+        document.getElementById('dailyReturnsTableBody').innerHTML = retKeys.length === 0
+            ? '<tr><td colspan="3" class="text-muted">لا توجد مرتجعات خلال الفترة</td></tr>'
+            : retKeys.map(n => `<tr><td class="text-start fw-bold">${escapeTopItemText(n)}</td><td>${retMap[n].qty}</td><td class="text-danger">${retMap[n].total.toFixed(2)} ج.م</td></tr>`).join('');
+    }
+</script>
+</body>
+</html>
